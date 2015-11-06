@@ -28,16 +28,17 @@ BuzzAPI.prototype.postRequest = function(resource, operation, data, callback) {
     myOpts.json = true;
     request.post(myOpts, function(err, res, body) {
         if (err || myOpts.sync) {
-            return callback(err, res, body);
+            return callback(err, body);
         } else {
             request({
                 'url': util.format('%s/apiv3/api.my_messages', server),
                 'qs': {
                     'api_app_ticket': body.api_app_ticket,
                     'api_pull_response_to': body.api_result_data
-                }
+                },
+                'json': true
             }, function(err, res, body) {
-                return callback(err, res, body);
+                return callback(err, body);
             });
         }
     });
