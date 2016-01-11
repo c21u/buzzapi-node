@@ -1,7 +1,8 @@
 {
   "name": "buzzapi",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Simple node library for interacting with buzzapi",
+  "repository": "https://github.com/stuartf/buzzapi-node.git",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
