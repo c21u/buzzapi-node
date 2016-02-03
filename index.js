@@ -54,7 +54,7 @@ var getResult = function(messageId, ticket, callback) {
         } else if (!body.api_result_data.api_result_data) {
             return callback(new Error('BuzzAPI returned an empty result, this usually means it timed out requesting a resource'), {}, body);
         } else {
-            return callback(null, body.api_result_data.api_result_data);
+            return callback(null, body.api_result_data.api_result_data, body);
         }
     });   
 };
