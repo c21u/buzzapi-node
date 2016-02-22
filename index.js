@@ -50,7 +50,7 @@ var getResult = function(messageId, ticket, callback) {
             return callback(err, body.api_error_info, body);
         } else if (_.isEmpty(body.api_result_data)) {
             // Empty result_data here means our data isn't ready, try again
-            return getResult(messageId, ticket, callback);
+            return getResult(messageId, body.api_app_ticket, callback);
         } else if (!body.api_result_data.api_result_data) {
             return callback(new Error('BuzzAPI returned an empty result, this usually means it timed out requesting a resource'), {}, body);
         } else {
