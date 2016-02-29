@@ -37,7 +37,13 @@ BuzzAPI.prototype.post = function(resource, operation, data, callback) {
     });
 };
 
-var getResult = function(messageId, ticket, callback) {
+var getResult = function(messageId, ticket, initTime, callback) {
+    if (_.isFunction(initTime)) {
+        callback = initTime;
+        initTime = new Date();
+    } else if (new Date() - initTime > 900){
+       return callback(new Error('Request was open for 15 minutes'));
+    }
     request({
         'url': util.format('%s/apiv3/api.my_messages', server),
         'qs': {
@@ -50,13 +56,13 @@ var getResult = function(messageId, ticket, callback) {
             return callback(err, body.api_error_info, body);
         } else if (_.isEmpty(body.api_result_data)) {
             // Empty result_data here means our data isn't ready, try again
-            return getResult(messageId, body.api_app_ticket, callback);
+            return getResult(messageId, body.api_app_ticket, initTime, callback);
         } else if (!body.api_result_data.api_result_data) {
             return callback(new Error('BuzzAPI returned an empty result, this usually means it timed out requesting a resource'), {}, body);
         } else {
             return callback(null, body.api_result_data.api_result_data, body);
         }
-    });   
+    });
 };
 
 module.exports = BuzzAPI;
