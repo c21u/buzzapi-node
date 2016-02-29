@@ -41,7 +41,7 @@ var getResult = function(messageId, ticket, initTime, callback) {
     if (_.isFunction(initTime)) {
         callback = initTime;
         initTime = new Date();
-    } else if (new Date() - initTime > 900){
+    } else if (new Date() - initTime > 900000){
        return callback(new Error('Request was open for 15 minutes'));
     }
     request({
