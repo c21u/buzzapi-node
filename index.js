@@ -28,7 +28,11 @@ BuzzAPI.prototype.post = function(resource, operation, data, callback) {
     myOpts.json = true;
     request.post(myOpts, function(err, res, body) {
         if (err || body.api_error_info) {
-            return callback(err, body.api_error_info, body);
+            if (body) {
+                return callback(err, body.api_error_info, body);
+            } else {
+                return callback(err);
+            }
         } else if (options.api_request_mode === 'sync') {
             return callback(null, body.api_result_data, body);
         } else {
@@ -53,7 +57,11 @@ var getResult = function(messageId, ticket, initTime, callback) {
         'json': true
     }, function(err, res, body) {
         if (err || body.api_error_info) {
-            return callback(err, body.api_error_info, body);
+            if (body) {
+                return callback(err, body.api_error_info, body);
+            } else {
+                return callback(err);
+            }
         } else if (_.isEmpty(body.api_result_data)) {
             // Empty result_data here means our data isn't ready, try again
             return getResult(messageId, body.api_app_ticket, initTime, callback);
