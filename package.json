@@ -1,6 +1,6 @@
 {
   "name": "buzzapi",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "Simple node library for interacting with buzzapi",
   "repository": "https://github.com/stuartf/buzzapi-node.git",
   "main": "index.js",
