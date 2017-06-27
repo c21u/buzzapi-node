@@ -2,6 +2,7 @@ var _ = require('underscore');
 var os = require('os');
 var request = require('request');
 var util = require('util');
+var BuzzAPIError = require('./buzzApiError');
 
 // Enable cookies
 request = request.defaults({jar: true});
@@ -29,7 +30,7 @@ BuzzAPI.prototype.post = function(resource, operation, data, callback) {
     request.post(myOpts, function(err, res, body) {
         if (err || body.api_error_info) {
             if (body) {
-                return callback(err, body.api_error_info, body);
+                return callback(new BuzzAPIError(err, body.api_error_info, body));
             } else {
                 return callback(err);
             }
@@ -56,17 +57,19 @@ var getResult = function(messageId, ticket, initTime, callback) {
         },
         'json': true
     }, function(err, res, body) {
-        if (err || body.api_error_info) {
-            if (body) {
-                return callback(err, body.api_error_info, body);
+        if (err || body.api_error_info || body.api_result_data.api_error_info) {
+            if (body.api_error_info) {
+                return callback(new BuzzAPIError('BuzzApi returned error_info', body.api_error_info, body));
+            } else if (body.api_result_data) {
+                return callback(new BuzzAPIError('BuzzApi returned error_info', body.api_result_data.api_error_info, body));
             } else {
-                return callback(err);
+                return callback(new BuzzAPIError(err, body, body));
             }
         } else if (_.isEmpty(body.api_result_data)) {
             // Empty result_data here means our data isn't ready, try again
             return getResult(messageId, body.api_app_ticket, initTime, callback);
         } else if (!body.api_result_data.api_result_data) {
-            return callback(new Error('BuzzAPI returned an empty result, this usually means it timed out requesting a resource'), {}, body);
+            return callback(new BuzzAPIError('BuzzAPI returned an empty result, this usually means it timed out requesting a resource', {}, body));
         } else {
             return callback(null, body.api_result_data.api_result_data, body);
         }
