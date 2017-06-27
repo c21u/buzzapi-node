@@ -1,4 +1,4 @@
-var _ = require('underscore');
+var _ = require('lodash/core');
 var os = require('os');
 var request = require('request');
 var util = require('util');

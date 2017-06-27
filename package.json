@@ -10,7 +10,7 @@
   "author": "D. Stuart Freeman",
   "license": "ISC",
   "dependencies": {
-    "request": "^2.65.0",
-    "underscore": "^1.8.3"
+    "lodash": "^4.17.4",
+    "request": "^2.65.0"
   }
 }
