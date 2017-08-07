@@ -58,6 +58,7 @@ var getResult = function(messageId, ticket, initTime, callback) {
         'json': true
     }, function(err, res, body) {
         if (err || body.api_error_info || (body.api_result_data && body.api_result_data.api_error_info)) {
+            if (! body) { return callback(new BuzzAPIError(err)); }
             if (body.api_error_info) {
                 return callback(new BuzzAPIError('BuzzApi returned error_info', body.api_error_info, body));
             } else if (body.api_result_data) {
