@@ -30,7 +30,7 @@ BuzzAPI.prototype.post = function(resource, operation, data, callback) {
     request.post(myOpts, function(err, res, body) {
         if (err || body.api_error_info) {
             if (body) {
-                return callback(new BuzzAPIError(err, body.api_error_info, body));
+                return callback(new BuzzAPIError(err, body.api_error_info, body), null, body);
             } else {
                 return callback(err);
             }
