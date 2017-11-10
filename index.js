@@ -14,6 +14,7 @@ var BuzzAPI = function(config) {
     options.api_app_id = config.apiUser;
     options.api_app_password = new Buffer(config.apiPassword).toString('base64');
     options.api_request_mode = config.sync ? 'sync' : 'async';
+    options.api_receive_timeout = config.api_receive_timeout || 900000;
     server = config.server || server;
 };
 
@@ -46,14 +47,15 @@ var getResult = function(messageId, ticket, initTime, callback) {
     if (_.isFunction(initTime)) {
         callback = initTime;
         initTime = new Date();
-    } else if (new Date() - initTime > 900000){
-       return callback(new Error('Request was open for 15 minutes'));
+    } else if (new Date() - initTime > options.api_receive_timeout){
+       return callback(new Error('Request timed out'));
     }
     request({
         'url': util.format('%s/apiv3/api.my_messages', server),
         'qs': {
             'api_app_ticket': ticket,
-            'api_pull_response_to': messageId
+            'api_pull_response_to': messageId,
+            'api_receive_timeout': 5000
         },
         'json': true
     }, function(err, res, body) {
@@ -67,8 +69,10 @@ var getResult = function(messageId, ticket, initTime, callback) {
                 return callback(new BuzzAPIError(err, body, body));
             }
         } else if (_.isEmpty(body.api_result_data)) {
-            // Empty result_data here means our data isn't ready, try again
-            return getResult(messageId, body.api_app_ticket, initTime, callback);
+            // Empty result_data here means our data isn't ready, wait 1 to 5 seconds and try again
+            return setTimeout(function() {
+                return getResult(messageId, body.api_app_ticket, initTime, callback);
+            }, Math.floor(Math.random() * (5000 - 1000) + 1000));
         } else if (!body.api_result_data.api_result_data) {
             return callback(new BuzzAPIError('BuzzAPI returned an empty result, this usually means it timed out requesting a resource', {}, body));
         } else {
