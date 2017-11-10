@@ -48,7 +48,7 @@ var getResult = function(messageId, ticket, initTime, callback) {
         callback = initTime;
         initTime = new Date();
     } else if (new Date() - initTime > options.api_receive_timeout){
-       return callback(new Error('Request timed out'));
+       return callback(new Error('Request timed out for: ' + messageId));
     }
     request({
         'url': util.format('%s/apiv3/api.my_messages', server),
