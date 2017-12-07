@@ -1,6 +1,6 @@
 var _ = require('lodash/core');
 var os = require('os');
-var request = require('request');
+var request = require('requestretry');
 var util = require('util');
 var BuzzAPIError = require('./buzzApiError');
 
