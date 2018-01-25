@@ -1,4 +1,5 @@
 var _ = require('lodash/core');
+var debug = require('debug')('buzzapi');
 var os = require('os');
 var request = require('requestretry');
 var util = require('util');
@@ -41,6 +42,7 @@ var doPost = function(resource, operation, data, callback) {
     data.handle = data.handle || util.format('from-%d@%s-rand%d', process.pid, os.hostname(), Math.floor(Math.random() * 32768));
     myOpts.body = _.extend(data, options);
     myOpts.json = true;
+    debug('Requesting %s', JSON.stringify(myOpts));
     request.post(myOpts, function(err, res, body) {
         if (err || body.api_error_info) {
             if (body) {
@@ -51,6 +53,7 @@ var doPost = function(resource, operation, data, callback) {
         } else if (options.api_request_mode === 'sync') {
             return callback(null, body.api_result_data, body);
         } else {
+            debug('Got messageId: %s', body.api_result_data);
             return getResult(body.api_result_data, body.api_app_ticket, callback);
         }
     });
@@ -58,6 +61,7 @@ var doPost = function(resource, operation, data, callback) {
 
 var resolve = function(messageId) {
     openReqs--;
+    debug('queued: %s  open: %s', queuedReqs.length, openReqs);
     if (queuedReqs[0]) {
         doPost.apply(null, queuedReqs.pop());
     }
@@ -71,6 +75,7 @@ var getResult = function(messageId, ticket, initTime, callback) {
         resolve(messageId);
         return callback(new Error('Request timed out for: ' + messageId));
     }
+    debug('Asking for result of %s', messageId);
     request({
         'url': util.format('%s/apiv3/api.my_messages', server),
         'qs': {
@@ -80,6 +85,7 @@ var getResult = function(messageId, ticket, initTime, callback) {
         },
         'json': true
     }, function(err, res, body) {
+        if (res && res.attempts && res.attempts > 1) { debug('Request took multiple attempts %s', res.attempts); }
         if (err || body.api_error_info || (body.api_result_data && body.api_result_data.api_error_info)) {
             if (! body) {
                 resolve(messageId);
@@ -105,6 +111,7 @@ var getResult = function(messageId, ticket, initTime, callback) {
             return callback(new BuzzAPIError('BuzzAPI returned an empty result, this usually means it timed out requesting a resource', {}, body));
         } else {
             resolve(messageId);
+            debug('Completed %s in %sms', messageId, new Date() - initTime);
             return callback(null, body.api_result_data.api_result_data, body);
         }
     });
