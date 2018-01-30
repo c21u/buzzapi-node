@@ -47,6 +47,7 @@ var doPost = function(resource, operation, data, callback) {
         myOpts.json = true;
         debug('Requesting %s', JSON.stringify(myOpts));
         request.post(myOpts, function(err, response, body) {
+            if (response && response.attempts && response.attempts > 1) { debug('Request took multiple attempts %s', response.attempts); }
             if (err || body.api_error_info) {
                 if (body) {
                     let error = new BuzzAPIError(err, body.api_error_info, body);
@@ -58,7 +59,7 @@ var doPost = function(resource, operation, data, callback) {
                 return callback ? callback(null, body.api_result_data, body) : res(body.api_result_data);
             } else {
                 debug('Got messageId: %s', body.api_result_data);
-                return res(getResult(body.api_result_data, body.api_app_ticket, callback));
+                return getResult(body.api_result_data, body.api_app_ticket, callback).then(res).catch(rej);
             }
         });
     });
@@ -69,7 +70,7 @@ var resolve = function(messageId) {
     debug('queued: %s  open: %s', queuedReqs.length, openReqs);
     if (queuedReqs[0]) {
         let next = queuedReqs.pop();
-        return doPost.apply(null, next.args).then((result) => { next.res(result); }).catch((err) => { next.rej(err); });
+        return doPost.apply(null, next.args).then(next.res).catch(next.rej);
     }
 };
 
@@ -115,7 +116,7 @@ var getResult = function(messageId, ticket, initTime, callback) {
             } else if (_.isEmpty(body.api_result_data)) {
                 // Empty result_data here means our data isn't ready, wait 1 to 5 seconds and try again
                 return setTimeout(function() {
-                    return getResult(messageId, body.api_app_ticket, initTime, callback);
+                    return getResult(messageId, body.api_app_ticket, initTime, callback).then(res).catch(rej);
                 }, Math.floor(Math.random() * (5000 - 1000) + 1000));
             } else if (!body.api_result_data.api_result_data) {
                 resolve(messageId);
