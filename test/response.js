@@ -2,6 +2,9 @@ module.exports = {
     'sync': {
         'api_result_data': {'success': true}
     },
+    'syncError': {
+        'api_error': {'success': false}
+    },
     'async': {
         'api_result_data': 'ABC123'
     },
