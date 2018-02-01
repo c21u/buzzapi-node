@@ -7,6 +7,10 @@ const response = require('./response');
 const buzzapisync = new BuzzApi({'apiUser': '', 'apiPassword': '', 'sync': true});
 const buzzapi = new BuzzApi({'apiUser': '', 'apiPassword': ''});
 
+beforeEach(() => {
+    nock.cleanAll();
+});
+
 describe('Sync tests', () => {
 
     it('Gets a resource in a single request', () => {
@@ -17,11 +21,19 @@ describe('Sync tests', () => {
         });
     });
 
-    it('Handles errors', () => {
+    it('Handles buzzapi errors', () => {
         nock('https://api.gatech.edu').post('/apiv3/test/test', body => {return true;}).reply(200, response.syncError);
         return buzzapisync.post('test', 'test', {}).catch(err => {
             expect(typeof err.buzzApiBody).to.equal('object');
             expect(err.buzzApiErrorInfo.success).to.equal(false);
+        });
+    });
+
+    it('Handles http errors', () => {
+        nock('https://api.gatech.edu').post('/apiv3/test/test', body => {return true;}).reply(404, 'Not Found');
+        return buzzapisync.post('test', 'test', {}).catch(err => {
+            expect(err.buzzApiBody).to.equal('Not Found');
+            return expect(err.buzzApiErrorInfo).to.be.empty;
         });
     });
 

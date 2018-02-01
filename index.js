@@ -51,7 +51,8 @@ var BuzzAPI = function(config) {
             debug('Requesting %s', JSON.stringify(myOpts));
             request.post(myOpts, function(err, response, body) {
                 if (response && response.attempts && response.attempts > 1) { debug('Request took multiple attempts %s', response.attempts); }
-                if (err || body.api_error_info) {
+                debug(response.statusCode);
+                if (err || response.statusCode > 299 || body.api_error_info) {
                     if (body) {
                         let error = new BuzzAPIError(err, body.api_error_info, body);
                         return callback ? callback(error, null, body) : rej(error);
