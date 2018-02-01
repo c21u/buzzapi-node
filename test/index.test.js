@@ -70,4 +70,38 @@ describe('Async tests', () => {
         });
     });
 
+    it('Handles buzzapi returning empty result due to upstream timeout', () => {
+        nock('https://api.gatech.edu').post('/apiv3/test/test', body => {return true;}).reply(200, response.async);
+        nock('https://api.gatech.edu').get('/apiv3/api.my_messages').query(qo => {return qo.api_pull_response_to === 'ABC123';}).reply(200, response.asyncEmpty);
+        return buzzapi.post('test', 'test', {}).catch(err => {
+            expect(err.buzzApiBody).to.equal('BuzzAPI returned an empty result, this usually means it timed out requesting a resource');
+        });
+    });
+
+    it('Handles buzzapi errors', () => {
+        nock('https://api.gatech.edu').post('/apiv3/test/test', body => {return true;}).reply(200, response.async);
+        nock('https://api.gatech.edu').get('/apiv3/api.my_messages').query(qo => {return qo.api_pull_response_to === 'ABC123';}).reply(200, response.asyncError);
+        return buzzapi.post('test', 'test', {}).catch(err => {
+            expect(typeof err.buzzApiBody).to.equal('object');
+            expect(err.buzzApiErrorInfo.success).to.equal(false);
+        });
+    });
+
+    it('Handles http errors', () => {
+        nock('https://api.gatech.edu').post('/apiv3/test/test', body => {return true;}).reply(200, response.async);
+        nock('https://api.gatech.edu').get('/apiv3/api.my_messages').query(qo => {return qo.api_pull_response_to === 'ABC123';}).reply(404, 'Not Found');
+        return buzzapi.post('test', 'test', {}).catch(err => {
+            expect(err.buzzApiBody).to.equal('Not Found');
+        });
+    });
+
+    it('Responds via callback if provided', done => {
+        nock('https://api.gatech.edu').post('/apiv3/test/test', body => {return true;}).reply(200, response.async);
+        nock('https://api.gatech.edu').get('/apiv3/api.my_messages').query(qo => {return qo.api_pull_response_to === 'ABC123';}).reply(200, response.asyncSuccess);
+        buzzapi.post('test', 'test', (err, response) => {
+            expect(typeof response).to.equal('object');
+            expect(response.success);
+            done();
+        });
+    });
 });

@@ -17,6 +17,15 @@ module.exports = {
         'api_result_data': {
             'api_result_data': {}
         }
+    },
+    'asyncEmpty': {
+        'api_result_data': {
+            'api_result_data': {}
+        }
+    },
+    'asyncError': {
+        'api_result_data': {
+            'api_error_info': {'success': false}
+        }
     }
-
 }

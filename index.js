@@ -99,7 +99,7 @@ var BuzzAPI = function(config) {
                 'json': true
             }, function(err, response, body) {
                 if (response && response.attempts && response.attempts > 1) { debug('Request took multiple attempts %s', response.attempts); }
-                if (err || body.api_error_info || (body.api_result_data && body.api_result_data.api_error_info)) {
+                if (err || response.statusCode > 299 || body.api_error_info || (body.api_result_data && body.api_result_data.api_error_info)) {
                     if (! body) {
                         resolve(messageId);
                         return callback ? callback(new BuzzAPIError(err)) : rej(new BuzzAPIError(err));
