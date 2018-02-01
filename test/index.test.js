@@ -7,15 +7,35 @@ const response = require('./response');
 const buzzapisync = new BuzzApi({'apiUser': '', 'apiPassword': '', 'sync': true});
 const buzzapi = new BuzzApi({'apiUser': '', 'apiPassword': ''});
 
-describe('Post tests', () => {
+describe('Sync tests', () => {
 
-    it('Gets a resource in a single request when using sync', () => {
+    it('Gets a resource in a single request', () => {
         nock('https://api.gatech.edu').post('/apiv3/test/test', body => {return true;}).reply(200, response.sync);
         return buzzapisync.post('test', 'test', {}).then(response => {
             expect(typeof response).to.equal('object');
             expect(response.success);
         });
     });
+
+    it('Handles errors', () => {
+        nock('https://api.gatech.edu').post('/apiv3/test/test', body => {return true;}).reply(200, response.syncError);
+        return buzzapisync.post('test', 'test', {}).catch(err => {
+            expect(typeof err.buzzApiBody).to.equal('object');
+            expect(err.buzzApiErrorInfo.success).to.equal(false);
+        });
+    });
+
+    it('Responds via callback if provided', done => {
+        nock('https://api.gatech.edu').post('/apiv3/test/test', body => {return true;}).reply(200, response.sync);
+        buzzapisync.post('test', 'test', (err, response) => {
+            expect(typeof response).to.equal('object');
+            expect(response.success);
+            done();
+        });
+    });
+});
+
+describe('Async tests', () => {
 
     it('Makes a second request to get async messages', () => {
         nock('https://api.gatech.edu').post('/apiv3/test/test', body => {return true;}).reply(200, response.async);
@@ -38,11 +58,4 @@ describe('Post tests', () => {
         });
     });
 
-    it('Handles errors on sync requests', () => {
-        nock('https://api.gatech.edu').post('/apiv3/test/test', body => {return true;}).reply(200, response.syncError);
-        return buzzapisync.post('test', 'test', {}).catch(err => {
-            expect(typeof err.buzzApiBody).to.equal('object');
-            expect(err.buzzApiErrorInfo.success).to.equal(false);
-        });
-    });
 });

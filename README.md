@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/stuartf/buzzapi-node.svg?branch=master)](https://travis-ci.org/stuartf/buzzapi-node)
+[![Build Status](https://travis-ci.org/stuartf/buzzapi-node.svg?branch=master)](https://travis-ci.org/stuartf/buzzapi-node) [![Coverage Status](https://coveralls.io/repos/github/stuartf/buzzapi-node/badge.svg?branch=master)](https://coveralls.io/github/stuartf/buzzapi-node?branch=master)
 
 Simple nodejs library for communicating with buzzapi.
 

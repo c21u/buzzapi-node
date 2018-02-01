@@ -5,7 +5,9 @@
   "repository": "https://github.com/stuartf/buzzapi-node.git",
   "main": "index.js",
   "scripts": {
-    "test": "mocha"
+    "test": "mocha",
+    "cover": "istanbul cover _mocha",
+    "coveralls": "npm run cover -- --report lcovonly && cat ./coverage/lcov.info | coveralls"
   },
   "author": "D. Stuart Freeman",
   "license": "ISC",
@@ -16,7 +18,10 @@
   },
   "devDependencies": {
     "chai": "^4.1.2",
+    "coveralls": "^3.0.0",
+    "istanbul": "^0.4.5",
     "mocha": "^5.0.0",
+    "mocha-lcov-reporter": "^1.3.0",
     "nock": "^9.1.6"
   }
 }
