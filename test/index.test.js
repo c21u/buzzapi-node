@@ -45,6 +45,19 @@ describe('Sync tests', () => {
             done();
         });
     });
+
+    it('Does not lose requests when opening more than the queuing limit of 20', () => {
+        for (let i=0; i <= 25; i++) {
+            nock('https://api.gatech.edu').post('/apiv3/test/test', body => {return true;}).socketDelay(200).reply(200, response.sync);
+        }
+        let check = response => {
+            expect(typeof response).to.equal('object');
+            expect(response.success);
+        };
+        for (let i=0; i <= 25; i++) {
+            buzzapisync.post('test', 'test', {}).then(check);
+        }
+    });
 });
 
 describe('Async tests', () => {
@@ -81,6 +94,15 @@ describe('Async tests', () => {
     it('Handles buzzapi errors', () => {
         nock('https://api.gatech.edu').post('/apiv3/test/test', body => {return true;}).reply(200, response.async);
         nock('https://api.gatech.edu').get('/apiv3/api.my_messages').query(qo => {return qo.api_pull_response_to === 'ABC123';}).reply(200, response.asyncError);
+        return buzzapi.post('test', 'test', {}).catch(err => {
+            expect(typeof err.buzzApiBody).to.equal('object');
+            expect(err.buzzApiErrorInfo.success).to.equal(false);
+        });
+    });
+
+    it('Handles buzzapi errors at top level of response', () => {
+        nock('https://api.gatech.edu').post('/apiv3/test/test', body => {return true;}).reply(200, response.async);
+        nock('https://api.gatech.edu').get('/apiv3/api.my_messages').query(qo => {return qo.api_pull_response_to === 'ABC123';}).reply(200, response.syncError);
         return buzzapi.post('test', 'test', {}).catch(err => {
             expect(typeof err.buzzApiBody).to.equal('object');
             expect(err.buzzApiErrorInfo.success).to.equal(false);
