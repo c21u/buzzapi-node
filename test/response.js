@@ -14,9 +14,7 @@ module.exports = {
         }
     },
     'asyncNotReady': {
-        'api_result_data': {
-            'api_result_data': {}
-        }
+        'api_result_data': {}
     },
     'asyncEmpty': {
         'api_result_data': {
@@ -28,4 +26,4 @@ module.exports = {
             'api_error_info': {'success': false}
         }
     }
-}
+};
