@@ -32,7 +32,6 @@ var BuzzAPI = function(config) {
         } else {
             return doPost(resource, operation, data, callback);
         }
-        return;
     };
 
     var doPost = function(resource, operation, data, callback) {
