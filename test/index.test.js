@@ -47,9 +47,7 @@ describe('Sync tests', () => {
     });
 
     it('Does not lose requests when opening more than the queuing limit of 20', () => {
-        for (let i=0; i <= 25; i++) {
-            nock('https://api.gatech.edu').post('/apiv3/test/test', body => {return true;}).socketDelay(200).reply(200, response.sync);
-        }
+        nock('https://api.gatech.edu').post('/apiv3/test/test', body => {return true;}).times(25).socketDelay(200).reply(200, response.sync);
         let check = response => {
             expect(typeof response).to.equal('object');
             expect(response.success);
@@ -81,7 +79,7 @@ describe('Async tests', () => {
             expect(response.success);
             expect(nrReq.isDone());
         });
-    });
+    }).timeout(6000);
 
     it('Handles buzzapi returning empty result due to upstream timeout', () => {
         nock('https://api.gatech.edu').post('/apiv3/test/test', body => {return true;}).reply(200, response.async);

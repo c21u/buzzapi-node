@@ -119,6 +119,7 @@ var BuzzAPI = function(config) {
                     }
                 } else if (_.isEmpty(body.api_result_data)) {
                     // Empty result_data here means our data isn't ready, wait 1 to 5 seconds and try again
+                    debug('Result not ready for ' + messageId);
                     return setTimeout(function() {
                         return getResult(messageId, body.api_app_ticket, initTime, callback).then(res).catch(rej);
                     }, Math.floor(Math.random() * (5000 - 1000) + 1000));
