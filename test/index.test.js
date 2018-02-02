@@ -47,14 +47,15 @@ describe('Sync tests', () => {
     });
 
     it('Does not lose requests when opening more than the queuing limit of 20', () => {
-        nock('https://api.gatech.edu').post('/apiv3/test/test', body => {return true;}).delay(200).times(25).reply(200, response.sync);
+        let reqs = nock('https://api.gatech.edu').post('/apiv3/test/test', body => {return true;}).times(25).socketDelay(200).reply(200, response.sync);
         let check = response => {
             expect(typeof response).to.equal('object');
             expect(response.success);
         };
-        for (let i=0; i <= 25; i++) {
+        for (let i=0; i < 25; i++) {
             buzzapisync.post('test', 'test', {}).then(check);
         }
+        expect(reqs.isDone());
     });
 });
 

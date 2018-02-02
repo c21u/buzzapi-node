@@ -50,7 +50,6 @@ var BuzzAPI = function(config) {
             debug('Requesting %s', JSON.stringify(myOpts));
             request.post(myOpts, function(err, response, body) {
                 if (response && response.attempts && response.attempts > 1) { debug('Request took multiple attempts %s', response.attempts); }
-                debug(response.statusCode);
                 if (err || response.statusCode > 299 || body.api_error_info) {
                     if (body) {
                         let error = new BuzzAPIError(err, body.api_error_info, body);
@@ -60,6 +59,7 @@ var BuzzAPI = function(config) {
                     }
                 } else if (that.options.api_request_mode === 'sync') {
                     debug('Sync was set, returning the result');
+                    resolve();
                     return callback ? callback(null, body.api_result_data, body) : res(body.api_result_data);
                 } else {
                     debug('Got messageId: %s', body.api_result_data);
@@ -69,7 +69,7 @@ var BuzzAPI = function(config) {
         });
     };
 
-    var resolve = function(messageId) {
+    var resolve = function() {
         openReqs--;
         debug('queued: %s  open: %s', queuedReqs.length, openReqs);
         if (queuedReqs[0]) {
@@ -84,7 +84,7 @@ var BuzzAPI = function(config) {
                 callback = initTime;
                 initTime = new Date();
             } else if (new Date() - initTime > that.options.api_receive_timeout){
-                resolve(messageId);
+                resolve();
                 let err = new Error('Request timed out for: ' + messageId);
                 return callback ? callback(err) : rej(err);
             }
@@ -101,19 +101,19 @@ var BuzzAPI = function(config) {
                 if (response && response.attempts && response.attempts > 1) { debug('Request took multiple attempts %s', response.attempts); }
                 if (err || response.statusCode > 299 || body.api_error_info || (body.api_result_data && body.api_result_data.api_error_info)) {
                     if (! body) {
-                        resolve(messageId);
+                        resolve();
                         return callback ? callback(new BuzzAPIError(err)) : rej(new BuzzAPIError(err));
                     }
                     if (body.api_error_info) {
-                        resolve(messageId);
+                        resolve();
                         let err = new BuzzAPIError('BuzzApi returned error_info', body.api_error_info, body);
                         return callback ? callback(err) : rej(err);
                     } else if (body.api_result_data) {
-                        resolve(messageId);
+                        resolve();
                         let err = new BuzzAPIError('BuzzApi returned error_info', body.api_result_data.api_error_info, body);
                         return callback ? callback(err) : rej(err);
                     } else {
-                        resolve(messageId);
+                        resolve();
                         let error = new BuzzAPIError(err, body, body);
                         return callback ? callback(error) : rej(error);
                     }
@@ -124,11 +124,11 @@ var BuzzAPI = function(config) {
                         return getResult(messageId, body.api_app_ticket, initTime, callback).then(res).catch(rej);
                     }, Math.floor(Math.random() * (5000 - 1000) + 1000));
                 } else if (_.isEmpty(body.api_result_data.api_result_data)) {
-                    resolve(messageId);
+                    resolve();
                     let err = new BuzzAPIError('BuzzAPI returned an empty result, this usually means it timed out requesting a resource', {}, body);
                     return callback ? callback(err) : rej(err);
                 } else {
-                    resolve(messageId);
+                    resolve();
                     debug('Completed %s in %sms', messageId, new Date() - initTime);
                     return callback ? callback(null, body.api_result_data.api_result_data, body) : res(body.api_result_data.api_result_data);
                 }
