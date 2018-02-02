@@ -47,7 +47,7 @@ describe('Sync tests', () => {
     });
 
     it('Does not lose requests when opening more than the queuing limit of 20', () => {
-        nock('https://api.gatech.edu').post('/apiv3/test/test', body => {return true;}).times(25).socketDelay(200).reply(200, response.sync);
+        nock('https://api.gatech.edu').post('/apiv3/test/test', body => {return true;}).delay(200).times(25).reply(200, response.sync);
         let check = response => {
             expect(typeof response).to.equal('object');
             expect(response.success);
@@ -124,4 +124,15 @@ describe('Async tests', () => {
             done();
         });
     });
+
+    it('Gives up retrying a request after reaching the timeout', () => {
+        nock('https://api.gatech.edu').post('/apiv3/test/test', body => {return true;}).reply(200, response.async);
+        nock('https://api.gatech.edu').get('/apiv3/api.my_messages').query(qo => {return qo.api_pull_response_to === 'ABC123';}).reply(200, response.asyncNotReady);
+        let defaultTimeout = buzzapi.options.api_receive_timeout;
+        buzzapi.options.api_receive_timeout = 1;
+        return buzzapi.post('test', 'test', {}).catch(err => {
+            buzzapi.options.api_receive_timeout = defaultTimeout;
+            expect(err.message).to.equal('Request timed out for: ABC123');
+        });
+    }).timeout(6000);
 });
