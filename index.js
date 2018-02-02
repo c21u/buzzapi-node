@@ -55,7 +55,8 @@ var BuzzAPI = function(config) {
                         let error = new BuzzAPIError(err, body.api_error_info, body);
                         return callback ? callback(error, null, body) : rej(error);
                     } else {
-                        return callback ? callback(err) : rej(err);
+                        let error = new BuzzAPIError(err);
+                        return callback ? callback(error) : rej(error);
                     }
                 } else if (that.options.api_request_mode === 'sync') {
                     debug('Sync was set, returning the result');
