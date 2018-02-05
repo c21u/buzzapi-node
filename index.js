@@ -103,20 +103,20 @@ var BuzzAPI = function(config) {
                 if (err || response.statusCode > 299 || body.api_error_info || (body.api_result_data && body.api_result_data.api_error_info)) {
                     if (! body) {
                         resolve();
-                        return callback ? callback(new BuzzAPIError(err)) : rej(new BuzzAPIError(err));
+                        return callback ? callback(new BuzzAPIError(err), null) : rej(new BuzzAPIError(err));
                     }
                     if (body.api_error_info) {
                         resolve();
                         let err = new BuzzAPIError('BuzzApi returned error_info', body.api_error_info, body);
-                        return callback ? callback(err) : rej(err);
+                        return callback ? callback(err, null) : rej(err);
                     } else if (body.api_result_data) {
                         resolve();
                         let err = new BuzzAPIError('BuzzApi returned error_info', body.api_result_data.api_error_info, body);
-                        return callback ? callback(err) : rej(err);
+                        return callback ? callback(err, null) : rej(err);
                     } else {
                         resolve();
                         let error = new BuzzAPIError(err, body, body);
-                        return callback ? callback(error) : rej(error);
+                        return callback ? callback(error, null) : rej(error);
                     }
                 } else if (_.isEmpty(body.api_result_data)) {
                     // Empty result_data here means our data isn't ready, wait 1 to 5 seconds and try again
@@ -127,7 +127,7 @@ var BuzzAPI = function(config) {
                 } else if (_.isEmpty(body.api_result_data.api_result_data)) {
                     resolve();
                     let err = new BuzzAPIError('BuzzAPI returned an empty result, this usually means it timed out requesting a resource', {}, body);
-                    return callback ? callback(err) : rej(err);
+                    return callback ? callback(err, null) : rej(err);
                 } else {
                     resolve();
                     debug('Completed %s in %sms', messageId, new Date() - initTime);

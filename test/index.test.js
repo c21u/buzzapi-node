@@ -54,6 +54,15 @@ describe('Sync tests', () => {
         });
     });
 
+    it('Sends errors via callback if provided', done => {
+        nock('https://api.gatech.edu').post('/apiv3/test/test', body => {return true;}).reply(404, 'Not Found');
+        buzzapisync.post('test', 'test', (err, response) => {
+            expect(response).to.be.null;
+            expect(err.buzzApiBody).to.equal('Not Found');
+            done();
+        });
+    });
+
     it('Does not lose requests when opening more than the queuing limit of 20', () => {
         let reqs = nock('https://api.gatech.edu').post('/apiv3/test/test', body => {return true;}).times(25).socketDelay(200).reply(200, response.sync);
         let check = response => {
@@ -130,6 +139,16 @@ describe('Async tests', () => {
         buzzapi.post('test', 'test', (err, response) => {
             expect(typeof response).to.equal('object');
             expect(response.success);
+            done();
+        });
+    });
+
+    it('Responds via callback if provided', done => {
+        nock('https://api.gatech.edu').post('/apiv3/test/test', body => {return true;}).reply(200, response.async);
+        nock('https://api.gatech.edu').get('/apiv3/api.my_messages').query(qo => {return qo.api_pull_response_to === 'ABC123';}).reply(404, 'Not Found');
+        buzzapi.post('test', 'test', (err, response) => {
+            expect(response).to.be.null;
+            expect(err.buzzApiBody).to.equal('Not Found');
             done();
         });
     });
