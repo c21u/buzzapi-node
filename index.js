@@ -124,10 +124,6 @@ var BuzzAPI = function(config) {
                     return setTimeout(function() {
                         return getResult(messageId, body.api_app_ticket, initTime, callback).then(res).catch(rej);
                     }, Math.floor(Math.random() * (5000 - 1000) + 1000));
-                } else if (_.isEmpty(body.api_result_data.api_result_data)) {
-                    resolve();
-                    let err = new BuzzAPIError('BuzzAPI returned an empty result, this usually means it timed out requesting a resource', {}, body);
-                    return callback ? callback(err, null) : rej(err);
                 } else {
                     resolve();
                     debug('Completed %s in %sms', messageId, new Date() - initTime);
