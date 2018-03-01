@@ -10,6 +10,7 @@ module.exports = {
     },
     'asyncSuccess': {
         'api_result_data': {
+            'api_request_messageid': 'ABC123',
             'api_result_data': {'success': true}
         }
     },
@@ -23,6 +24,7 @@ module.exports = {
     },
     'asyncError': {
         'api_result_data': {
+            'api_request_messageid': 'ABC123',
             'api_error_info': {'success': false}
         }
     }

@@ -57,7 +57,7 @@ describe('Sync tests', () => {
     it('Sends errors via callback if provided', done => {
         nock('https://api.gatech.edu').post('/apiv3/test/test', body => {return true;}).reply(404, 'Not Found');
         buzzapisync.post('test', 'test', (err, response) => {
-            expect(response).to.be.null;
+            /*jshint expr: true*/ expect(response).to.be.null;
             expect(err.buzzApiBody).to.equal('Not Found');
             done();
         });
@@ -139,7 +139,7 @@ describe('Async tests', () => {
         nock('https://api.gatech.edu').post('/apiv3/test/test', body => {return true;}).reply(200, response.async);
         nock('https://api.gatech.edu').get('/apiv3/api.my_messages').query(qo => {return qo.api_pull_response_to === 'ABC123';}).reply(404, 'Not Found');
         buzzapi.post('test', 'test', (err, response) => {
-            expect(response).to.be.null;
+            /*jshint expr: true*/ expect(response).to.be.null;
             expect(err.buzzApiBody).to.equal('Not Found');
             done();
         });
