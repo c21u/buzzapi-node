@@ -145,6 +145,15 @@ describe('Async tests', () => {
         });
     });
 
+    it('Handles errors with no body set', () => {
+        nock('https://api.gatech.edu').post('/apiv3/test/test', body => {return true;}).reply(200, response.async);
+        nock('https://api.gatech.edu').get('/apiv3/api.my_messages').query(qo => {return qo.api_pull_response_to === 'ABC123';}).reply(400);
+        return buzzapi.post('test', 'test', {}).catch(err => {
+            expect(err.message).to.equal('BuzzApi error');
+            return expect(err.buzzApiBody).to.be.empty;
+        });
+    });
+
     it('Gives up retrying a request after reaching the timeout', () => {
         nock('https://api.gatech.edu').post('/apiv3/test/test', body => {return true;}).reply(200, response.async);
         nock('https://api.gatech.edu').get('/apiv3/api.my_messages').query(qo => {return qo.api_pull_response_to === 'ABC123';}).reply(200, response.asyncNotReady);
@@ -155,13 +164,4 @@ describe('Async tests', () => {
             expect(err.message).to.equal('Request timed out for: ABC123');
         });
     }).timeout(6000);
-
-    it('Handles errors with no body set', () => {
-        nock('https://api.gatech.edu').post('/apiv3/test/test', body => {return true;}).reply(200, response.async);
-        nock('https://api.gatech.edu').get('/apiv3/api.my_messages').query(qo => {return qo.api_pull_response_to === 'ABC123';}).reply(400);
-        return buzzapi.post('test', 'test', {}).catch(err => {
-            expect(err.message).to.equal('BuzzApi error');
-            return expect(err.buzzApiBody).to.be.empty;
-        });
-    });
 });

@@ -24,6 +24,7 @@ var BuzzAPI = function(config) {
     var openReqs = 0;
     var queuedReqs = [];
     var unresolved = {};
+    var gettingResult = false;
 
     this.post = function(resource, operation, data, callback) {
         if (openReqs >= 20) {
@@ -99,9 +100,17 @@ var BuzzAPI = function(config) {
         return;
     };
 
+    var scheduleRetry = function(ticket) {
+        setTimeout(() => {
+            return getResult(ticket);
+        }, Math.floor(Math.random() * (5000 - 1000) + 1000));
+    };
+
     var getResult = function(ticket) {
+        if (gettingResult) { return; };
+        gettingResult = true;
         cleanupExpired();
-        var messageIds = Object.keys(unresolved);
+        let messageIds = Object.keys(unresolved);
         if (messageIds.length === 0) { return; }
         debug('Asking for result of %s', messageIds);
         request({
@@ -112,7 +121,8 @@ var BuzzAPI = function(config) {
                 'api_receive_timeout': 5000
             },
             'json': true
-        }, function(err, response, body) {
+        }, (err, response, body) => {
+            gettingResult = false;
             if (response && response.attempts && response.attempts > 1) { debug('Request took multiple attempts %s', response.attempts); }
             if (err || response.statusCode > 299 || body.api_error_info || (body.api_result_data && body.api_result_data.api_error_info)) {
                 if (! body) {
@@ -130,6 +140,8 @@ var BuzzAPI = function(config) {
                 if (body.api_error_info) {
                     let message = unresolved[body.api_error_info.api_request_messageid];
                     let err = new BuzzAPIError('BuzzApi returned error_info', body.api_error_info, body);
+                    debug(unresolved);
+                    debug(body);
                     if (message) {
                         return message.callback ? message.callback(err, null) : message.reject(err);
                     } else {
@@ -167,12 +179,10 @@ var BuzzAPI = function(config) {
             } else if (_.isEmpty(body.api_result_data)) {
                 // Empty result_data here means our data isn't ready, wait 1 to 5 seconds and try again
                 debug('Result not ready for ' + messageIds);
-                return setTimeout(function() {
-                    return getResult(body.api_app_ticket);
-                }, Math.floor(Math.random() * (5000 - 1000) + 1000));
+                return scheduleRetry(body.api_app_ticket);
             } else {
-                var messageId = body.api_result_data.api_request_messageid;
-                var message = unresolved[messageId];
+                let messageId = body.api_result_data.api_request_messageid;
+                let message = unresolved[messageId];
                 debug('Got result for ', messageId);
                 resolve(messageId);
                 if (message.callback) {
