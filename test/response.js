@@ -6,7 +6,8 @@ module.exports = {
         'api_error_info': {'success': false}
     },
     'async': {
-        'api_result_data': 'ABC123'
+        'api_result_data': 'ABC123',
+        'api_app_ticket': 'XYZ789'
     },
     'asyncSuccess': {
         'api_result_data': {

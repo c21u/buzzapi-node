@@ -16,6 +16,7 @@ var BuzzAPI = function(config) {
         'api_app_id':  config.apiUser,
         'api_app_password':  new Buffer(config.apiPassword).toString('base64'),
         'api_request_mode':  config.sync ? 'sync' : 'async',
+        'ticket': /.*/,
         'api_receive_timeout':  config.api_receive_timeout || 900000,
     };
 
@@ -25,6 +26,7 @@ var BuzzAPI = function(config) {
     var queuedReqs = [];
     var unresolved = {};
     var gettingResult = false;
+    var ticket = '';
 
     this.post = function(resource, operation, data, callback) {
         if (openReqs >= 20) {
@@ -67,7 +69,8 @@ var BuzzAPI = function(config) {
                 } else {
                     debug('Got messageId: %s', body.api_result_data);
                     unresolved[body.api_result_data] = {'resolve': res, 'reject': rej, 'callback': callback, 'initTime': new Date()};
-                    return getResult(body.api_app_ticket);
+                    ticket = body.api_app_ticket;
+                    return getResult();
                 }
             });
         });
@@ -100,27 +103,27 @@ var BuzzAPI = function(config) {
         return;
     };
 
-    var scheduleRetry = function(ticket) {
+    var scheduleRetry = function() {
         setTimeout(() => {
-            return getResult(ticket);
+            return getResult();
         }, Math.floor(Math.random() * (5000 - 1000) + 1000));
     };
 
-    var getResult = function(ticket) {
-        if (gettingResult) { return; };
+    var getResult = function() {
+        if (gettingResult) { return; }
         gettingResult = true;
         cleanupExpired();
         let messageIds = Object.keys(unresolved);
         if (messageIds.length === 0) { return; }
         debug('Asking for result of %s', messageIds);
-        request({
+        request.post({
             'url': util.format('%s/apiv3/api.my_messages', server),
-            'qs': {
+            'json': {
+                'api_operation': 'read',
                 'api_app_ticket': ticket,
-                'api_pull_response_to': messageIds.join(','),
+                'api_pull_response_to': messageIds,
                 'api_receive_timeout': 5000
-            },
-            'json': true
+            }
         }, (err, response, body) => {
             gettingResult = false;
             if (response && response.attempts && response.attempts > 1) { debug('Request took multiple attempts %s', response.attempts); }
@@ -155,7 +158,7 @@ var BuzzAPI = function(config) {
                             }
                             resolve(messageId);
                         });
-                    return;
+                        return;
                     }
                 } else if (body.api_result_data) {
                     let messageId = body.api_result_data.api_request_messageid;
@@ -179,7 +182,7 @@ var BuzzAPI = function(config) {
             } else if (_.isEmpty(body.api_result_data)) {
                 // Empty result_data here means our data isn't ready, wait 1 to 5 seconds and try again
                 debug('Result not ready for ' + messageIds);
-                return scheduleRetry(body.api_app_ticket);
+                return scheduleRetry();
             } else {
                 let messageId = body.api_result_data.api_request_messageid;
                 let message = unresolved[messageId];
@@ -191,7 +194,7 @@ var BuzzAPI = function(config) {
                     message.resolve(body.api_result_data.api_result_data);
                 }
                 if (Object.keys(unresolved).length > 0) {
-                    getResult(ticket);
+                    getResult();
                 }
             }
         });
