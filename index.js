@@ -1,5 +1,6 @@
 var _ = require('lodash/core');
 var debug = require('debug')('buzzapi');
+var hyperid = require('hyperid')({'fixedLength': true, 'urlSafe': true});
 var os = require('os');
 var request = require('requestretry');
 var util = require('util');
@@ -48,9 +49,8 @@ var BuzzAPI = function(config) {
             }
             var myOpts = {};
             myOpts.url = util.format('%s/apiv3/%s/%s', server, resource, operation);
-            data.handle = data.handle || util.format('from-%d@%s-rand%d', process.pid, os.hostname(), Math.floor(Math.random() * 32768));
-            myOpts.body = _.extend(data, that.options);
-            myOpts.json = true;
+            myOpts.api_client_request_handle = data.api_client_request_handle || util.format('%d@%s-%s', process.pid, os.hostname(), hyperid());
+            myOpts.json = _.extend(data, that.options);
             debug('Requesting %s', JSON.stringify(myOpts));
             request.post(myOpts, function(err, response, body) {
                 if (response && response.attempts && response.attempts > 1) { debug('Request took multiple attempts %s', response.attempts); }
@@ -67,7 +67,7 @@ var BuzzAPI = function(config) {
                     resolve();
                     return callback ? callback(null, body.api_result_data, body) : res(body.api_result_data);
                 } else {
-                    debug('Got messageId: %s', body.api_result_data);
+                    debug('Got messageId: %s for %s', body.api_result_data, myOpts.api_client_request_handle);
                     unresolved[body.api_result_data] = {'resolve': res, 'reject': rej, 'callback': callback, 'initTime': new Date()};
                     ticket = body.api_app_ticket;
                     return getResult();
@@ -115,14 +115,16 @@ var BuzzAPI = function(config) {
         cleanupExpired();
         let messageIds = Object.keys(unresolved);
         if (messageIds.length === 0) { return; }
-        debug('Asking for result of %s', messageIds);
+        let handle = util.format('%d@%s-%s', process.pid, os.hostname(), hyperid());
+        debug('Asking for result of %s using handle %s', messageIds, handle);
         request.post({
             'url': util.format('%s/apiv3/api.my_messages', server),
             'json': {
                 'api_operation': 'read',
                 'api_app_ticket': ticket,
                 'api_pull_response_to': messageIds,
-                'api_receive_timeout': 5000
+                'api_receive_timeout': 5000,
+                'api_client_request_handle': handle
             }
         }, (err, response, body) => {
             gettingResult = false;
