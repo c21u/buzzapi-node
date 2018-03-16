@@ -7,7 +7,7 @@ const response = require('./response');
 const buzzapisync = new BuzzApi({'apiUser': '', 'apiPassword': '', 'sync': true});
 const buzzapi = new BuzzApi({'apiUser': '', 'apiPassword': ''});
 
-const defaultBody = {'api_operation': 'read', 'api_pull_response_to': ['ABC123'], 'api_app_ticket': 'XYZ789', 'api_receive_timeout': 5000};
+const defaultBody = {'api_operation': 'read', 'api_pull_response_to': ['ABC123'], 'api_app_ticket': 'XYZ789', 'api_receive_timeout': 5000, 'api_client_request_handle': /.*/};
 const api = nock('https://api.gatech.edu');
 
 beforeEach(() => {
