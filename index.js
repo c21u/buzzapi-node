@@ -1,4 +1,4 @@
-var _ = require('lodash/core');
+var isEmpty = require('lodash.isempty');
 var debug = require('debug')('buzzapi');
 var hyperid = require('hyperid')({'fixedLength': true, 'urlSafe': true});
 var os = require('os');
@@ -43,14 +43,14 @@ var BuzzAPI = function(config) {
         debug('Options: ' + JSON.stringify(that.options));
         return new Promise((res, rej) => {
             openReqs++;
-            if (_.isFunction(data)) {
+            if (typeof data === 'function') {
                 callback = data;
                 data = {};
             }
             var myOpts = {};
             myOpts.url = util.format('%s/apiv3/%s/%s', server, resource, operation);
             myOpts.api_client_request_handle = data.api_client_request_handle || util.format('%d@%s-%s', process.pid, os.hostname(), hyperid());
-            myOpts.json = _.extend(data, that.options);
+            myOpts.json = Object.assign(data, that.options);
             debug('Requesting %s', JSON.stringify(myOpts));
             request.post(myOpts, function(err, response, body) {
                 if (response && response.attempts && response.attempts > 1) { debug('Request took multiple attempts %s', response.attempts); }
@@ -181,7 +181,7 @@ var BuzzAPI = function(config) {
                     });
                     return;
                 }
-            } else if (_.isEmpty(body.api_result_data)) {
+            } else if (isEmpty(body.api_result_data)) {
                 // Empty result_data here means our data isn't ready, wait 1 to 5 seconds and try again
                 debug('Result not ready for ' + messageIds);
                 return scheduleRetry();
