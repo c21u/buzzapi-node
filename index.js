@@ -15,7 +15,7 @@ var BuzzAPI = function(config) {
 
     this.options = {
         'api_app_id':  config.apiUser,
-        'api_app_password':  new Buffer(config.apiPassword).toString('base64'),
+        'api_app_password':  Buffer.from(config.apiPassword).toString('base64'),
         'api_request_mode':  config.sync ? 'sync' : 'async',
         'ticket': /.*/,
         'api_receive_timeout':  config.api_receive_timeout || 900000,
