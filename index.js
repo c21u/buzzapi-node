@@ -12,7 +12,6 @@ const BuzzAPI = function(config) {
     api_app_id: config.apiUser,
     api_app_password: Buffer.from(config.apiPassword).toString("base64"),
     api_request_mode: config.sync ? "sync" : "async",
-    ticket: "",
     api_receive_timeout: config.api_receive_timeout || 900000
   };
 
@@ -38,12 +37,13 @@ const BuzzAPI = function(config) {
           api_client_request_handle:
             data.api_client_request_handle ||
             `${process.pid}@${os.hostname()}-${hyperid()}`
-        })
+        }),
+        headers: { "Content-Type": "application/json" }
       };
       debug("Requesting %s", JSON.stringify(myOpts));
       return fetch(`${server}/apiv3/${resource}/${operation}`, myOpts).then(
         response => {
-          if (!response.ok || response.status > 299) {
+          if (!response.ok) {
             return rej(new BuzzAPIError(null, null, response.statusText));
           }
           response
@@ -126,10 +126,11 @@ const BuzzAPI = function(config) {
         api_pull_response_to: messageIds,
         api_receive_timeout: 5000,
         api_client_request_handle: handle
-      })
+      }),
+      headers: { "Content-Type": "application/json" }
     }).then(response => {
       gettingResult = false;
-      if (!response.ok || response.status > 299) {
+      if (!response.ok) {
         messageIds.map(messageId => {
           const message = unresolved[messageId];
           message.reject(new BuzzAPIError(null, null, response.statusText));
@@ -140,7 +141,7 @@ const BuzzAPI = function(config) {
         );
       }
 
-      response.json().then(json => {
+      return response.json().then(json => {
         if (
           json.api_error_info ||
           (json.api_result_data && json.api_result_data.api_error_info)
@@ -196,7 +197,7 @@ const BuzzAPI = function(config) {
           resolve(messageId);
           message.resolve(json.api_result_data.api_result_data);
           if (Object.keys(unresolved).length > 0) {
-            getResult();
+            return getResult();
           }
           return;
         }
