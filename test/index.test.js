@@ -65,33 +65,7 @@ describe("Sync tests", () => {
       .reply(400);
     return buzzapisync.post("test", "test", {}).catch(err => {
       expect(err.message).to.equal("BuzzApi error");
-      return expect(err.buzzApiBody).to.be.empty;
-    });
-  });
-
-  it("Responds via callback if provided", done => {
-    api
-      .post("/apiv3/test/test", () => {
-        return true;
-      })
-      .reply(200, response.sync);
-    buzzapisync.post("test", "test", (err, response) => {
-      expect(typeof response).to.equal("object");
-      expect(response.success);
-      done();
-    });
-  });
-
-  it("Sends errors via callback if provided", done => {
-    api
-      .post("/apiv3/test/test", () => {
-        return true;
-      })
-      .reply(404, "Not Found");
-    buzzapisync.post("test", "test", (err, response) => {
-      expect(response).to.be.null;
-      expect(err.buzzApiBody).to.equal("Not Found");
-      done();
+      return expect(err.buzzApiBody).to.equal("Bad Request");
     });
   });
 
@@ -192,36 +166,6 @@ describe("Async tests", () => {
     });
   });
 
-  it("Responds via callback if provided", done => {
-    api
-      .post("/apiv3/test/test", () => {
-        return true;
-      })
-      .reply(200, response.async);
-    api
-      .post("/apiv3/api.my_messages", defaultBody)
-      .reply(200, response.asyncSuccess);
-    buzzapi.post("test", "test", (err, response) => {
-      expect(typeof response).to.equal("object");
-      expect(response.success);
-      done();
-    });
-  });
-
-  it("Responds via callback if provided", done => {
-    api
-      .post("/apiv3/test/test", () => {
-        return true;
-      })
-      .reply(200, response.async);
-    api.post("/apiv3/api.my_messages", defaultBody).reply(404, "Not Found");
-    buzzapi.post("test", "test", (err, response) => {
-      expect(response).to.be.null;
-      expect(err.buzzApiBody).to.equal("Not Found");
-      done();
-    });
-  });
-
   it("Handles errors with no body set", () => {
     api
       .post("/apiv3/test/test", () => {
@@ -231,7 +175,7 @@ describe("Async tests", () => {
     api.post("/apiv3/api.my_messages", defaultBody).reply(400);
     return buzzapi.post("test", "test", {}).catch(err => {
       expect(err.message).to.equal("BuzzApi error");
-      return expect(err.buzzApiBody).to.be.empty;
+      return expect(err.buzzApiBody).to.equal("Bad Request");
     });
   });
 
