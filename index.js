@@ -46,33 +46,32 @@ const BuzzAPI = function(config) {
       return fetch(`${server}/apiv3/${resource}/${operation}`, myOpts).then(
         response => {
           if (!response.ok) {
-            return rej(new BuzzAPIError(null, null, response.statusText));
+            return rej(
+              new BuzzAPIError(response.statusText, null, response.statusText)
+            );
           }
-          response
-            .json()
-            .then(json => {
-              if (json.api_error_info) {
-                const error = new BuzzAPIError(
-                  new Error(),
-                  json.api_error_info,
-                  json
-                );
-                return rej(error);
-              } else if (that.options.api_request_mode === "sync") {
-                debug("Sync was set, returning the result");
-                return res(json.api_result_data);
-              } else {
-                debug("Got messageId: %s for %s", json.api_result_data, handle);
-                unresolved[json.api_result_data] = {
-                  resolve: res,
-                  reject: rej,
-                  initTime: new Date()
-                };
-                that.options.ticket = json.api_app_ticket;
-                return getResult();
-              }
-            })
-            .catch(err => rej(new BuzzAPIError()));
+          response.json().then(json => {
+            if (json.api_error_info) {
+              const error = new BuzzAPIError(
+                new Error(),
+                json.api_error_info,
+                json
+              );
+              return rej(error);
+            } else if (that.options.api_request_mode === "sync") {
+              debug("Sync was set, returning the result");
+              return res(json.api_result_data);
+            } else {
+              debug("Got messageId: %s for %s", json.api_result_data, handle);
+              unresolved[json.api_result_data] = {
+                resolve: res,
+                reject: rej,
+                initTime: new Date()
+              };
+              that.options.ticket = json.api_app_ticket;
+              return getResult();
+            }
+          });
         }
       );
     });
@@ -85,7 +84,7 @@ const BuzzAPI = function(config) {
   };
 
   const cleanupExpired = function() {
-    Object.keys(unresolved).map(messageId => {
+    Object.keys(unresolved).forEach(messageId => {
       if (
         new Date() - unresolved[messageId].initTime >
         that.options.api_receive_timeout
@@ -129,14 +128,7 @@ const BuzzAPI = function(config) {
     }).then(response => {
       gettingResult = false;
       if (!response.ok) {
-        messageIds.map(messageId => {
-          const message = unresolved[messageId];
-          message.reject(new BuzzAPIError(null, null, response.statusText));
-          resolve(messageId);
-        });
-        return Promise.reject(
-          new BuzzAPIError(null, null, response.statusText)
-        );
+        return scheduleRetry();
       }
 
       return response.json().then(json => {
@@ -159,7 +151,7 @@ const BuzzAPI = function(config) {
               return message.reject(err);
             } else {
               // We don't know which message threw the error, so invalidate all of them
-              messageIds.map(messageId => {
+              messageIds.forEach(messageId => {
                 const m = unresolved[messageId];
                 m.reject(err);
                 resolve(messageId);
@@ -177,7 +169,7 @@ const BuzzAPI = function(config) {
             );
             return message.reject(err);
           } else {
-            messageIds.map(messageId => {
+            messageIds.forEach(messageId => {
               const error = new BuzzAPIError(new Error(), json, json);
               const message = unresolved[messageId];
               resolve(messageId);
@@ -192,12 +184,12 @@ const BuzzAPI = function(config) {
           const messageId = json.api_result_data.api_request_messageid;
           const message = unresolved[messageId];
           debug("Got result for ", messageId);
-          resolve(messageId);
+          const resolution = resolve(messageId);
           message.resolve(json.api_result_data.api_result_data);
           if (Object.keys(unresolved).length > 0) {
             return getResult();
           }
-          return;
+          return resolution;
         }
       });
     });

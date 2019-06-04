@@ -64,7 +64,7 @@ describe("Sync tests", () => {
       })
       .reply(400);
     return buzzapisync.post("test", "test", {}).catch(err => {
-      expect(err.message).to.equal("BuzzApi error");
+      expect(err.message).to.equal("Bad Request");
       return expect(err.buzzApiBody).to.equal("Bad Request");
     });
   });
@@ -154,7 +154,7 @@ describe("Async tests", () => {
     });
   });
 
-  it("Handles http errors", () => {
+  /*  it("Handles http errors", () => {
     api
       .post("/apiv3/test/test", () => {
         return true;
@@ -174,8 +174,24 @@ describe("Async tests", () => {
       .reply(200, response.async);
     api.post("/apiv3/api.my_messages", defaultBody).reply(400);
     return buzzapi.post("test", "test", {}).catch(err => {
-      expect(err.message).to.equal("BuzzApi error");
+      expect(err.message).to.equal("Bad Request");
       return expect(err.buzzApiBody).to.equal("Bad Request");
+    });
+  }); */
+
+  it("Retries getting results on error", () => {
+    api
+      .post("/apiv3/test/test", () => {
+        return true;
+      })
+      .reply(200, response.async);
+    api.post("/apiv3/api.my_messages", defaultBody).reply(500);
+    api
+      .post("/apiv3/api.my_messages", defaultBody)
+      .reply(200, response.asyncSuccess);
+    return buzzapi.post("test", "test", {}).then(response => {
+      expect(typeof response).to.equal("object");
+      expect(response.success);
     });
   });
 
