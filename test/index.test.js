@@ -154,31 +154,6 @@ describe("Async tests", () => {
     });
   });
 
-  /*  it("Handles http errors", () => {
-    api
-      .post("/apiv3/test/test", () => {
-        return true;
-      })
-      .reply(200, response.async);
-    api.post("/apiv3/api.my_messages", defaultBody).reply(404, "Not Found");
-    return buzzapi.post("test", "test", {}).catch(err => {
-      expect(err.buzzApiBody).to.equal("Not Found");
-    });
-  });
-
-  it("Handles errors with no body set", () => {
-    api
-      .post("/apiv3/test/test", () => {
-        return true;
-      })
-      .reply(200, response.async);
-    api.post("/apiv3/api.my_messages", defaultBody).reply(400);
-    return buzzapi.post("test", "test", {}).catch(err => {
-      expect(err.message).to.equal("Bad Request");
-      return expect(err.buzzApiBody).to.equal("Bad Request");
-    });
-  }); */
-
   it("Retries getting results on error", () => {
     api
       .post("/apiv3/test/test", () => {
@@ -193,7 +168,7 @@ describe("Async tests", () => {
       expect(typeof response).to.equal("object");
       expect(response.success);
     });
-  });
+  }).timeout(6000);
 
   it("Gives up retrying a request after reaching the timeout", () => {
     api
