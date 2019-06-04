@@ -29,14 +29,16 @@ const BuzzAPI = function(config) {
   this.post = function(resource, operation, data) {
     debug("Options: " + JSON.stringify(that.options));
     return new Promise((res, rej) => {
+      const handle =
+        data.api_client_request_handle ||
+        `${process.pid}@${os.hostname()}-${hyperid()}`;
+
       const myOpts = {
         method: "POST",
         body: JSON.stringify({
           ...that.options,
           ...data,
-          api_client_request_handle:
-            data.api_client_request_handle ||
-            `${process.pid}@${os.hostname()}-${hyperid()}`
+          api_client_request_handle: handle
         }),
         headers: { "Content-Type": "application/json" }
       };
@@ -60,11 +62,7 @@ const BuzzAPI = function(config) {
                 debug("Sync was set, returning the result");
                 return res(json.api_result_data);
               } else {
-                debug(
-                  "Got messageId: %s for %s",
-                  json.api_result_data,
-                  myOpts.body.api_client_request_handle
-                );
+                debug("Got messageId: %s for %s", json.api_result_data, handle);
                 unresolved[json.api_result_data] = {
                   resolve: res,
                   reject: rej,
