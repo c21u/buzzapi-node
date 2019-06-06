@@ -78,9 +78,7 @@ const BuzzAPI = function(config) {
   };
 
   const resolve = function(messageId) {
-    if (messageId) {
-      delete unresolved[messageId];
-    }
+    delete unresolved[messageId];
   };
 
   const cleanupExpired = function() {
