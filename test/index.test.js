@@ -170,6 +170,21 @@ describe("Async tests", () => {
     });
   }).timeout(6000);
 
+  it("Gives up after 5 retries at getting results", () => {
+    api
+      .post("/apiv3/test/test", () => {
+        return true;
+      })
+      .reply(200, response.async);
+    api
+      .post("/apiv3/api.my_messages", defaultBody)
+      .times(6)
+      .reply(500);
+    return buzzapi.post("test", "test", {}).catch(err => {
+      expect(err.message).to.equal("Failed to get results from BuzzAPI");
+    });
+  }).timeout(60000);
+
   it("Gives up retrying a request after reaching the timeout", () => {
     api
       .post("/apiv3/test/test", () => {
