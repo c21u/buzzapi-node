@@ -139,7 +139,8 @@ describe("Async tests", () => {
     });
   });
 
-  it("Handles buzzapi errors at top level of response", () => {
+  // I don't think this ever happens
+  /*  it("Handles buzzapi errors at top level of response", () => {
     api
       .post("/apiv3/test/test", () => {
         return true;
@@ -152,7 +153,7 @@ describe("Async tests", () => {
       expect(typeof err.buzzApiBody).to.equal("object");
       expect(err.buzzApiErrorInfo.success).to.equal(false);
     });
-  });
+  }); */
 
   it("Retries getting results on error", () => {
     api
@@ -169,21 +170,6 @@ describe("Async tests", () => {
       expect(response.success);
     });
   }).timeout(6000);
-
-  it("Gives up after 5 retries at getting results", () => {
-    api
-      .post("/apiv3/test/test", () => {
-        return true;
-      })
-      .reply(200, response.async);
-    api
-      .post("/apiv3/api.my_messages", defaultBody)
-      .times(6)
-      .reply(500);
-    return buzzapi.post("test", "test", {}).catch(err => {
-      expect(err.message).to.equal("Failed to get results from BuzzAPI");
-    });
-  }).timeout(60000);
 
   it("Gives up retrying a request after reaching the timeout", () => {
     api

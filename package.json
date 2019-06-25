@@ -12,6 +12,7 @@
   "license": "ISC",
   "dependencies": {
     "debug": "^4.1.1",
+    "delay": "^4.3.0",
     "hyperid": "^2.0.2",
     "lodash.isempty": "^4.4.0",
     "make-fetch-happen": "^4.0.1",
