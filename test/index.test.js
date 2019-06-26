@@ -81,11 +81,14 @@ describe("Sync tests", () => {
       expect(typeof response).to.equal("object");
       expect(response.success);
     };
-    for (let i = 0; i < 25; i++) {
-      buzzapisync.post("test", "test", {}).then(check);
-    }
+    const promises = function*(start = 0, end = 24, step = 1) {
+      for (let i = start; i < end; i += step) {
+        yield buzzapisync.post("test", "test", {});
+      }
+    };
+    return Promise.all([...promises()]).then(res => res.map(check));
     expect(reqs.isDone());
-  });
+  }).timeout(6000);
 });
 
 describe("Async tests", () => {
