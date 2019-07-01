@@ -6,6 +6,7 @@ const hyperid = require("hyperid")({ fixedLength: true, urlSafe: true });
 const os = require("os");
 const BuzzAPIError = require("./buzzApiError");
 const pRetry = require("p-retry");
+const pThrottle = require("p-throttle");
 const { default: PQueue } = require("p-queue");
 
 const BuzzAPI = function(config) {
@@ -22,9 +23,13 @@ const BuzzAPI = function(config) {
 
   const server = config.server || "https://api.gatech.edu";
 
-  const fetch = require("make-fetch-happen").defaults({
-    agent: https.globalAgent
-  });
+  const fetch = pThrottle(
+    require("make-fetch-happen").defaults({
+      agent: https.globalAgent
+    }),
+    333,
+    1000
+  );
 
   const unresolved = {};
 
@@ -49,7 +54,7 @@ const BuzzAPI = function(config) {
           debug("Requesting %s", JSON.stringify(myOpts));
           return pRetry(
             () => fetch(`${server}/apiv3/${resource}/${operation}`, myOpts),
-            { retries: 5 }
+            { retries: 5, randomize: true }
           ).then(response => {
             if (!response.ok) {
               return rej(
@@ -136,15 +141,13 @@ const BuzzAPI = function(config) {
             api_client_request_handle: handle
           }),
           headers: { "Content-Type": "application/json" }
-        }).then(response =>
-          response.ok
-            ? response
-            : Promise.reject(new Error("Failed to get results from BuzzAPI"))
-        ),
-      { retries: 5 }
-    )
-      .then(response => response.json())
-      .then(json => {
+        }),
+      { retries: 5, randomize: true }
+    ).then(response => {
+      if (!response.ok) {
+        return scheduleRetry();
+      }
+      return response.json().then(json => {
         if (
           json.api_error_info ||
           (json.api_result_data && json.api_result_data.api_error_info)
@@ -185,6 +188,7 @@ const BuzzAPI = function(config) {
           return resolve(messageId, json.api_result_data.api_result_data);
         }
       });
+    });
   };
 };
 
