@@ -58,7 +58,12 @@ const BuzzAPI = function(config) {
           ).then(response => {
             if (!response.ok) {
               return rej(
-                new BuzzAPIError(response.statusText, null, response.statusText)
+                new BuzzAPIError(
+                  response.statusText,
+                  null,
+                  response.statusText,
+                  response.api_request_messageid
+                )
               );
             }
             return response.json().then(json => {
@@ -66,7 +71,8 @@ const BuzzAPI = function(config) {
                 const error = new BuzzAPIError(
                   new Error(),
                   json.api_error_info,
-                  json
+                  json,
+                  json.api_request_messageid
                 );
                 return rej(error);
               } else if (that.options.api_request_mode === "sync") {
@@ -158,10 +164,10 @@ const BuzzAPI = function(config) {
             const err = new BuzzAPIError(
               "BuzzApi returned error_info",
               json.api_error_info,
-              json
+              json,
+              json.api_error_info.api_request_messageid
             );
             debug(unresolved);
-            debug(json);
             if (message) {
               return reject(json.api_error_info.api_request_messageid, err);
             } else {
@@ -172,11 +178,19 @@ const BuzzAPI = function(config) {
             const err = new BuzzAPIError(
               "BuzzApi returned error_info",
               json.api_result_data.api_error_info,
-              json
+              json,
+              messageId
             );
             return reject(messageId, err);
           } else {
-            return Promise.reject(new BuzzAPIError(new Error(), json, json));
+            return Promise.reject(
+              new BuzzAPIError(
+                new Error(),
+                json,
+                json,
+                json.api_request_messageId
+              )
+            );
           }
         } else if (isEmpty(json.api_result_data)) {
           // Empty result_data here means our data isn't ready, wait 1 to 5 seconds and try again
