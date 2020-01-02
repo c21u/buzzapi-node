@@ -9,6 +9,8 @@ const pRetry = require("p-retry");
 const pThrottle = require("p-throttle");
 const { default: PQueue } = require("p-queue");
 
+https.globalAgent.maxCachedSessions = 0;
+
 const BuzzAPI = function(config) {
   const that = this;
 
