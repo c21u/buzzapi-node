@@ -54,17 +54,19 @@ const BuzzAPI = function(config) {
             headers: { "Content-Type": "application/json" }
           };
           debug("Requesting %s", JSON.stringify(myOpts));
-          return pRetry(
-            () => fetch(`${server}/apiv3/${resource}/${operation}`, myOpts),
-            { retries: 5, randomize: true }
-          ).then(response => {
+          const url = `${server}/apiv3/${resource}/${operation}`;
+          return pRetry(() => fetch(url, myOpts), {
+            retries: 5,
+            randomize: true
+          }).then(response => {
             if (!response.ok) {
               return rej(
                 new BuzzAPIError(
-                  response.statusText,
+                  `${response.status}: ${response.statusText}`,
                   null,
-                  response.statusText,
-                  response.api_request_messageid
+                  `${response.status}: ${response.statusText}`,
+                  response.api_request_messageid,
+                  { url, options: myOpts }
                 )
               );
             }
@@ -74,7 +76,8 @@ const BuzzAPI = function(config) {
                   new Error(),
                   json.api_error_info,
                   json,
-                  json.api_request_messageid
+                  json.api_request_messageid,
+                  { url, options: myOpts }
                 );
                 return rej(error);
               } else if (that.options.api_request_mode === "sync") {
@@ -137,21 +140,22 @@ const BuzzAPI = function(config) {
     }
     const handle = `${process.pid}@${os.hostname()}-${hyperid()}`;
     debug("Asking for result of %s using handle %s", messageIds, handle);
-    return pRetry(
-      () =>
-        fetch(`${server}/apiv3/api.my_messages`, {
-          method: "POST",
-          body: JSON.stringify({
-            api_operation: "read",
-            api_app_ticket: that.options.ticket,
-            api_pull_response_to: messageIds,
-            api_receive_timeout: 5000,
-            api_client_request_handle: handle
-          }),
-          headers: { "Content-Type": "application/json" }
-        }),
-      { retries: 5, randomize: true }
-    ).then(response => {
+    const url = `${server}/apiv3/api.my_messages`;
+    const myOpts = {
+      method: "POST",
+      body: JSON.stringify({
+        api_operation: "read",
+        api_app_ticket: that.options.ticket,
+        api_pull_response_to: messageIds,
+        api_receive_timeout: 5000,
+        api_client_request_handle: handle
+      }),
+      headers: { "Content-Type": "application/json" }
+    };
+    return pRetry(() => fetch(url, myOpts), {
+      retries: 5,
+      randomize: true
+    }).then(response => {
       if (!response.ok) {
         return scheduleRetry();
       }
@@ -167,7 +171,8 @@ const BuzzAPI = function(config) {
               "BuzzApi returned error_info",
               json.api_error_info,
               json,
-              json.api_error_info.api_request_messageid
+              json.api_error_info.api_request_messageid,
+              { url, options: myOpts }
             );
             debug(unresolved);
             if (message) {
@@ -181,7 +186,8 @@ const BuzzAPI = function(config) {
               "BuzzApi returned error_info",
               json.api_result_data.api_error_info,
               json,
-              messageId
+              messageId,
+              { url, options: myOpts }
             );
             return reject(messageId, err);
           } else {
@@ -190,7 +196,8 @@ const BuzzAPI = function(config) {
                 new Error(),
                 json,
                 json,
-                json.api_request_messageId
+                json.api_request_messageId,
+                { url, options: myOpts }
               )
             );
           }
