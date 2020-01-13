@@ -52,7 +52,7 @@ describe("Sync tests", () => {
       })
       .reply(404, "Not Found");
     return buzzapisync.post("test", "test", {}).catch(err => {
-      expect(err.buzzApiBody).to.equal("Not Found");
+      expect(err.buzzApiBody).to.equal("404: Not Found");
       return expect(err.buzzApiErrorInfo).to.be.empty;
     });
   });
@@ -64,8 +64,8 @@ describe("Sync tests", () => {
       })
       .reply(400);
     return buzzapisync.post("test", "test", {}).catch(err => {
-      expect(err.message).to.equal("Bad Request");
-      return expect(err.buzzApiBody).to.equal("Bad Request");
+      expect(err.message).to.equal("400: Bad Request");
+      return expect(err.buzzApiBody).to.equal("400: Bad Request");
     });
   });
 
