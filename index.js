@@ -11,7 +11,7 @@ const { default: PQueue } = require("p-queue");
 
 https.globalAgent.maxCachedSessions = 0;
 
-const BuzzAPI = function(config) {
+const BuzzAPI = function (config) {
   const that = this;
 
   const queue = new PQueue({ concurrency: 20 });
@@ -20,14 +20,14 @@ const BuzzAPI = function(config) {
     api_app_id: config.apiUser,
     api_app_password: Buffer.from(config.apiPassword).toString("base64"),
     api_request_mode: config.sync ? "sync" : "async",
-    api_receive_timeout: config.api_receive_timeout || 900000
+    api_receive_timeout: config.api_receive_timeout || 900000,
   };
 
   const server = config.server || "https://api.gatech.edu";
 
   const fetch = pThrottle(
     require("make-fetch-happen").defaults({
-      agent: https.globalAgent
+      agent: https.globalAgent,
     }),
     333,
     1000
@@ -35,7 +35,7 @@ const BuzzAPI = function(config) {
 
   const unresolved = {};
 
-  this.post = function(resource, operation, data) {
+  this.post = function (resource, operation, data) {
     debug("Options: " + JSON.stringify(that.options));
     return queue.add(
       () =>
@@ -49,16 +49,16 @@ const BuzzAPI = function(config) {
             body: JSON.stringify({
               ...that.options,
               ...data,
-              api_client_request_handle: handle
+              api_client_request_handle: handle,
             }),
-            headers: { "Content-Type": "application/json" }
+            headers: { "Content-Type": "application/json" },
           };
           debug("Requesting %s", JSON.stringify(myOpts));
           const url = `${server}/apiv3/${resource}/${operation}`;
           return pRetry(() => fetch(url, myOpts), {
             retries: 5,
-            randomize: true
-          }).then(response => {
+            randomize: true,
+          }).then((response) => {
             if (!response.ok) {
               return rej(
                 new BuzzAPIError(
@@ -70,7 +70,7 @@ const BuzzAPI = function(config) {
                 )
               );
             }
-            return response.json().then(json => {
+            return response.json().then((json) => {
               if (json.api_error_info) {
                 const error = new BuzzAPIError(
                   new Error(),
@@ -88,7 +88,7 @@ const BuzzAPI = function(config) {
                 unresolved[json.api_result_data] = {
                   resolve: res,
                   reject: rej,
-                  initTime: new Date()
+                  initTime: new Date(),
                 };
                 that.options.ticket = json.api_app_ticket;
                 return getResult();
@@ -99,22 +99,22 @@ const BuzzAPI = function(config) {
     );
   };
 
-  const resolve = function(messageId, result) {
+  const resolve = function (messageId, result) {
     debug("size: %s, pending: %s", queue.size, queue.pending);
     const message = unresolved[messageId];
     delete unresolved[messageId];
     return message.resolve(result);
   };
 
-  const reject = function(messageId, err) {
+  const reject = function (messageId, err) {
     debug("size: %s, pending: %s", queue.size, queue.pending);
     const message = unresolved[messageId];
     delete unresolved[messageId];
     return message.reject(err);
   };
 
-  const cleanupExpired = function() {
-    Object.keys(unresolved).forEach(messageId => {
+  const cleanupExpired = function () {
+    Object.keys(unresolved).forEach((messageId) => {
       if (
         new Date() - unresolved[messageId].initTime >
         that.options.api_receive_timeout
@@ -126,17 +126,17 @@ const BuzzAPI = function(config) {
     return;
   };
 
-  const scheduleRetry = function() {
+  const scheduleRetry = function () {
     return delay(Math.floor(Math.random() * 4000 + 1000)).then(() =>
       getResult()
     );
   };
 
-  const getResult = function() {
+  const getResult = function () {
     cleanupExpired();
     const messageIds = Object.keys(unresolved);
     if (messageIds.length === 0) {
-      return new Promise(res => res());
+      return new Promise((res) => res());
     }
     const handle = `${process.pid}@${os.hostname()}-${hyperid()}`;
     debug("Asking for result of %s using handle %s", messageIds, handle);
@@ -148,18 +148,18 @@ const BuzzAPI = function(config) {
         api_app_ticket: that.options.ticket,
         api_pull_response_to: messageIds,
         api_receive_timeout: 5000,
-        api_client_request_handle: handle
+        api_client_request_handle: handle,
       }),
-      headers: { "Content-Type": "application/json" }
+      headers: { "Content-Type": "application/json" },
     };
     return pRetry(() => fetch(url, myOpts), {
       retries: 5,
-      randomize: true
-    }).then(response => {
+      randomize: true,
+    }).then((response) => {
       if (!response.ok) {
         return scheduleRetry();
       }
-      return response.json().then(json => {
+      return response.json().then((json) => {
         if (
           json.api_error_info ||
           (json.api_result_data && json.api_result_data.api_error_info)
@@ -211,7 +211,7 @@ const BuzzAPI = function(config) {
           if (json.api_result_data.hasOwnProperty("api_result_is_last_page")) {
             return resolve(messageId, {
               lastPage: json.api_result_data.api_result_is_last_page,
-              result: json.api_result_data.api_result_data
+              result: json.api_result_data.api_result_data,
             });
           }
           return resolve(messageId, json.api_result_data.api_result_data);

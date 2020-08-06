@@ -1,4 +1,4 @@
-const BuzzAPIError = function(
+const BuzzAPIError = function (
   message,
   buzzApiErrorInfo,
   buzzApiBody,
@@ -29,7 +29,7 @@ function sanitize(buzzApiRequest) {
     body.api_app_password = "[REDACTED]";
     return {
       ...buzzApiRequest,
-      options: { ...buzzApiRequest.options, body: JSON.stringify(body) }
+      options: { ...buzzApiRequest.options, body: JSON.stringify(body) },
     };
   }
   return buzzApiRequest;
