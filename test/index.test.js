@@ -75,7 +75,7 @@ describe("Sync tests", () => {
         return true;
       })
       .times(25)
-      .socketDelay(200)
+      .delayConnection(200)
       .reply(200, response.sync);
     const check = (response) => {
       expect(typeof response).to.equal("object");
