@@ -69,6 +69,24 @@ describe("Sync tests", () => {
     });
   });
 
+  it("Gets all pages in a paged request", () => {
+    api
+      .post("/apiv3/test/test", (body) => {
+        return body.api_paging_cursor === "START";
+      })
+      .reply(200, response.page1);
+    api
+      .post("/apiv3/test/test", (body) => {
+        return body.api_paging_cursor === "PAGE2";
+      })
+      .reply(200, response.page2);
+    return buzzapisync
+      .post("test", "test", {}, { paged: true })
+      .then((response) => {
+        expect(response.length).to.equal(2);
+      });
+  });
+
   it("Does not lose requests when opening more than the queuing limit of 20", () => {
     const reqs = api
       .post("/apiv3/test/test", () => {
@@ -97,7 +115,7 @@ describe("Async tests", () => {
       .post("/apiv3/test/test", () => {
         return true;
       })
-      .reply(200, response.async);
+      .reply(200, response.asyn);
     const aReq = api
       .post("/apiv3/api.my_messages", defaultBody)
       .reply(200, response.asyncSuccess);
@@ -108,12 +126,32 @@ describe("Async tests", () => {
     });
   });
 
+  it("Gets all pages of async messages", () => {
+    api
+      .post("/apiv3/test/test", (body) => {
+        return body.api_paging_cursor === "START";
+      })
+      .reply(200, response.asyn);
+    api.post("/apiv3/api.my_messages", defaultBody).reply(200, response.page1a);
+    api
+      .post("/apiv3/test/test", (body) => {
+        return body.api_paging_cursor === "PAGE2";
+      })
+      .reply(200, response.asyn);
+    api.post("/apiv3/api.my_messages", defaultBody).reply(200, response.page2a);
+    return buzzapi
+      .post("test", "test", {}, { paged: true })
+      .then((response) => {
+        expect(response.length).to.equal(2);
+      });
+  });
+
   it("Tries again if async result not ready", () => {
     api
       .post("/apiv3/test/test", () => {
         return true;
       })
-      .reply(200, response.async);
+      .reply(200, response.asyn);
     const nrReq = api
       .post("/apiv3/api.my_messages", defaultBody)
       .reply(200, response.asyncNotReady);
@@ -132,7 +170,7 @@ describe("Async tests", () => {
       .post("/apiv3/test/test", () => {
         return true;
       })
-      .reply(200, response.async);
+      .reply(200, response.asyn);
     api
       .post("/apiv3/api.my_messages", defaultBody)
       .reply(200, response.asyncError);
@@ -148,7 +186,7 @@ describe("Async tests", () => {
       .post("/apiv3/test/test", () => {
         return true;
       })
-      .reply(200, response.async);
+      .reply(200, response.asyn);
     api
       .post("/apiv3/api.my_messages", defaultBody)
       .reply(200, response.syncError);
@@ -163,7 +201,7 @@ describe("Async tests", () => {
       .post("/apiv3/test/test", () => {
         return true;
       })
-      .reply(200, response.async);
+      .reply(200, response.asyn);
     api.post("/apiv3/api.my_messages", defaultBody).reply(500);
     api
       .post("/apiv3/api.my_messages", defaultBody)
@@ -179,7 +217,7 @@ describe("Async tests", () => {
       .post("/apiv3/test/test", () => {
         return true;
       })
-      .reply(200, response.async);
+      .reply(200, response.asyn);
     api
       .post("/apiv3/api.my_messages", defaultBody)
       .reply(200, response.asyncNotReady);

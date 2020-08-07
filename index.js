@@ -35,75 +35,106 @@ const BuzzAPI = function (config) {
 
   const unresolved = {};
 
-  this.post = function (resource, operation, data) {
+  this.post = function (resource, operation, data, opts) {
     debug("Options: " + JSON.stringify(that.options));
-    return queue.add(
-      () =>
-        new Promise((res, rej) => {
-          const handle =
-            data.api_client_request_handle ||
-            `${process.pid}@${os.hostname()}-${hyperid()}`;
+    return queue.add(() => doPost(resource, operation, data, opts));
+  };
 
-          const myOpts = {
-            method: "POST",
-            body: JSON.stringify({
-              ...that.options,
-              ...data,
-              api_client_request_handle: handle,
-            }),
-            headers: { "Content-Type": "application/json" },
-          };
-          debug("Requesting %s", JSON.stringify(myOpts));
-          const url = `${server}/apiv3/${resource}/${operation}`;
-          return pRetry(() => fetch(url, myOpts), {
-            retries: 5,
-            randomize: true,
-          }).then((response) => {
-            if (!response.ok) {
-              return rej(
-                new BuzzAPIError(
-                  `${response.status}: ${response.statusText}`,
-                  null,
-                  `${response.status}: ${response.statusText}`,
-                  response.api_request_messageid,
-                  { url, options: myOpts }
-                )
-              );
-            }
-            return response.json().then((json) => {
-              if (json.api_error_info) {
-                const error = new BuzzAPIError(
-                  new Error(),
-                  json.api_error_info,
-                  json,
-                  json.api_request_messageid,
-                  { url, options: myOpts }
-                );
-                return rej(error);
-              } else if (that.options.api_request_mode === "sync") {
-                debug("Sync was set, returning the result");
-                return res(json.api_result_data);
-              } else {
-                debug("Got messageId: %s for %s", json.api_result_data, handle);
-                unresolved[json.api_result_data] = {
-                  resolve: res,
-                  reject: rej,
-                  initTime: new Date(),
-                };
-                that.options.ticket = json.api_app_ticket;
-                return getResult();
-              }
-            });
-          });
-        })
-    );
+  const doPost = (resource, operation, data, opts) =>
+    new Promise((res, rej) => {
+      const handle =
+        data.api_client_request_handle ||
+        `${process.pid}@${os.hostname()}-${hyperid()}`;
+
+      const myOpts = {
+        method: "POST",
+        body: JSON.stringify({
+          ...that.options,
+          ...data,
+          api_client_request_handle: handle,
+          ...(opts && opts.paged ? { api_paging_cursor: "START" } : null),
+        }),
+        headers: { "Content-Type": "application/json" },
+      };
+      debug("Requesting %s", JSON.stringify(myOpts));
+      const url = `${server}/apiv3/${resource}/${operation}`;
+      return pRetry(() => fetch(url, myOpts), {
+        retries: 5,
+        randomize: true,
+      }).then((response) => {
+        if (!response.ok) {
+          return rej(
+            new BuzzAPIError(
+              `${response.status}: ${response.statusText}`,
+              null,
+              `${response.status}: ${response.statusText}`,
+              response.api_request_messageid,
+              { url, options: myOpts }
+            )
+          );
+        }
+        return response.json().then(async (json) => {
+          if (json.api_error_info) {
+            const error = new BuzzAPIError(
+              new Error(),
+              json.api_error_info,
+              json,
+              json.api_request_messageid,
+              { url, options: myOpts }
+            );
+            return rej(error);
+          } else if (that.options.api_request_mode === "sync") {
+            const resultData = await getPages(json, resource, operation, data);
+            debug("Sync was set, returning the result");
+            return res(resultData);
+          } else {
+            debug("Got messageId: %s for %s", json.api_result_data, handle);
+            unresolved[json.api_result_data] = {
+              resolve: res,
+              reject: rej,
+              initTime: new Date(),
+              resource,
+              operation,
+              data,
+            };
+            that.options.ticket = json.api_app_ticket;
+            return getResult();
+          }
+        });
+      });
+    });
+  const getPages = function (buzzResponse, resource, operation, data) {
+    const unwrapped = buzzResponse.api_result_data.api_result_data
+      ? buzzResponse.api_result_data
+      : buzzResponse;
+    if (
+      unwrapped.api_paging_next_cursor &&
+      !unwrapped.api_result_is_last_page
+    ) {
+      debug(
+        `Fetching more pages with cursor: ${unwrapped.api_paging_next_cursor}`
+      );
+      return doPost(resource, operation, {
+        ...data,
+        api_paging_cursor: unwrapped.api_paging_next_cursor,
+      }).then((nextPage) => unwrapped.api_result_data.concat(nextPage));
+    }
+    return Promise.resolve(unwrapped.api_result_data);
   };
 
   const resolve = function (messageId, result) {
     debug("size: %s, pending: %s", queue.size, queue.pending);
     const message = unresolved[messageId];
     delete unresolved[messageId];
-    return message.resolve(result);
+    return getPages(
+      result,
+      message.resource,
+      message.operation,
+      message.data,
+      message.myOpts
+    )
+      .then((pages) => message.resolve(pages))
+      .catch((err) => message.reject(err));
   };
 
   const reject = function (messageId, err) {
@@ -208,13 +239,7 @@ const BuzzAPI = function (config) {
         } else {
           const messageId = json.api_result_data.api_request_messageid;
           debug("Got result for ", messageId);
-          if (json.api_result_data.hasOwnProperty("api_result_is_last_page")) {
-            return resolve(messageId, {
-              lastPage: json.api_result_data.api_result_is_last_page,
-              result: json.api_result_data.api_result_data,
-            });
-          }
-          return resolve(messageId, json.api_result_data.api_result_data);
+          return resolve(messageId, json);
         }
       });
     });

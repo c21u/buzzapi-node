@@ -5,7 +5,7 @@ module.exports = {
   syncError: {
     api_error_info: { success: false },
   },
-  async: {
+  asyn: {
     api_result_data: "ABC123",
     api_app_ticket: "XYZ789",
   },
@@ -27,6 +27,30 @@ module.exports = {
     api_result_data: {
       api_request_messageid: "ABC123",
       api_error_info: { success: false },
+    },
+  },
+  page1: {
+    api_paging_next_cursor: "PAGE2",
+    api_result_is_last_page: false,
+    api_result_data: ["foo"],
+  },
+  page2: {
+    api_result_is_last_page: true,
+    api_result_data: ["bar"],
+  },
+  page1a: {
+    api_result_data: {
+      api_request_messageid: "ABC123",
+      api_paging_next_cursor: "PAGE2",
+      api_result_is_last_page: false,
+      api_result_data: ["foo"],
+    },
+  },
+  page2a: {
+    api_result_data: {
+      api_request_messageid: "ABC123",
+      api_result_is_last_page: true,
+      api_result_data: ["bar"],
     },
   },
 };
