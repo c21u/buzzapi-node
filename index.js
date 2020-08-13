@@ -208,9 +208,9 @@ const BuzzAPI = function(config) {
         } else {
           const messageId = json.api_result_data.api_request_messageid;
           debug("Got result for ", messageId);
-          if (json.api_result_data.hasOwnProperty("api_paging_last_page")) {
+          if (json.api_result_data.hasOwnProperty("api_result_is_last_page")) {
             return resolve(messageId, {
-              lastPage: json.api_result_data.api_paging_last_page,
+              lastPage: json.api_result_data.api_result_is_last_page,
               result: json.api_result_data.api_result_data
             });
           }
