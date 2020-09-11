@@ -12,7 +12,7 @@ const defaultBody = {
   api_pull_response_to: ["ABC123"],
   api_app_ticket: "XYZ789",
   api_receive_timeout: 5000,
-  api_client_request_handle: /.*/
+  api_client_request_handle: /.*/,
 };
 const api = nock("https://api.gatech.edu");
 
@@ -27,7 +27,7 @@ describe("Sync tests", () => {
         return true;
       })
       .reply(200, response.sync);
-    return buzzapisync.post("test", "test", {}).then(response => {
+    return buzzapisync.post("test", "test", {}).then((response) => {
       expect(typeof response).to.equal("object");
       expect(response.success);
     });
@@ -39,7 +39,7 @@ describe("Sync tests", () => {
         return true;
       })
       .reply(200, response.syncError);
-    return buzzapisync.post("test", "test", {}).catch(err => {
+    return buzzapisync.post("test", "test", {}).catch((err) => {
       expect(typeof err.buzzApiBody).to.equal("object");
       expect(err.buzzApiErrorInfo.success).to.equal(false);
     });
@@ -51,7 +51,7 @@ describe("Sync tests", () => {
         return true;
       })
       .reply(404, "Not Found");
-    return buzzapisync.post("test", "test", {}).catch(err => {
+    return buzzapisync.post("test", "test", {}).catch((err) => {
       expect(err.buzzApiBody).to.equal("404: Not Found");
       return expect(err.buzzApiErrorInfo).to.be.empty;
     });
@@ -63,10 +63,28 @@ describe("Sync tests", () => {
         return true;
       })
       .reply(400);
-    return buzzapisync.post("test", "test", {}).catch(err => {
+    return buzzapisync.post("test", "test", {}).catch((err) => {
       expect(err.message).to.equal("400: Bad Request");
       return expect(err.buzzApiBody).to.equal("400: Bad Request");
     });
+  });
+
+  it("Gets all pages in a paged request", () => {
+    api
+      .post("/apiv3/test/test", (body) => {
+        return body.api_paging_cursor === "START";
+      })
+      .reply(200, response.page1);
+    api
+      .post("/apiv3/test/test", (body) => {
+        return body.api_paging_cursor === "PAGE2";
+      })
+      .reply(200, response.page2);
+    return buzzapisync
+      .post("test", "test", {}, { paged: true })
+      .then((response) => {
+        expect(response.length).to.equal(2);
+      });
   });
 
   it("Does not lose requests when opening more than the queuing limit of 20", () => {
@@ -75,18 +93,18 @@ describe("Sync tests", () => {
         return true;
       })
       .times(25)
-      .socketDelay(200)
+      .delayConnection(200)
       .reply(200, response.sync);
-    const check = response => {
+    const check = (response) => {
       expect(typeof response).to.equal("object");
       expect(response.success);
     };
-    const promises = function*(start = 0, end = 24, step = 1) {
+    const promises = function* (start = 0, end = 24, step = 1) {
       for (let i = start; i < end; i += step) {
         yield buzzapisync.post("test", "test", {});
       }
     };
-    return Promise.all([...promises()]).then(res => res.map(check));
+    return Promise.all([...promises()]).then((res) => res.map(check));
     expect(reqs.isDone());
   }).timeout(6000);
 });
@@ -97,15 +115,35 @@ describe("Async tests", () => {
       .post("/apiv3/test/test", () => {
         return true;
       })
-      .reply(200, response.async);
+      .reply(200, response.asyn);
     const aReq = api
       .post("/apiv3/api.my_messages", defaultBody)
       .reply(200, response.asyncSuccess);
-    return buzzapi.post("test", "test", {}).then(response => {
+    return buzzapi.post("test", "test", {}).then((response) => {
       expect(typeof response).to.equal("object");
       expect(response.success);
       expect(aReq.isDone());
     });
+  });
+
+  it("Gets all pages of async messages", () => {
+    api
+      .post("/apiv3/test/test", (body) => {
+        return body.api_paging_cursor === "START";
+      })
+      .reply(200, response.asyn);
+    api.post("/apiv3/api.my_messages", defaultBody).reply(200, response.page1a);
+    api
+      .post("/apiv3/test/test", (body) => {
+        return body.api_paging_cursor === "PAGE2";
+      })
+      .reply(200, response.asyn);
+    api.post("/apiv3/api.my_messages", defaultBody).reply(200, response.page2a);
+    return buzzapi
+      .post("test", "test", {}, { paged: true })
+      .then((response) => {
+        expect(response.length).to.equal(2);
+      });
   });
 
   it("Tries again if async result not ready", () => {
@@ -113,14 +151,14 @@ describe("Async tests", () => {
       .post("/apiv3/test/test", () => {
         return true;
       })
-      .reply(200, response.async);
+      .reply(200, response.asyn);
     const nrReq = api
       .post("/apiv3/api.my_messages", defaultBody)
       .reply(200, response.asyncNotReady);
     api
       .post("/apiv3/api.my_messages", defaultBody)
       .reply(200, response.asyncSuccess);
-    return buzzapi.post("test", "test", {}).then(response => {
+    return buzzapi.post("test", "test", {}).then((response) => {
       expect(typeof response).to.equal("object");
       expect(response.success);
       expect(nrReq.isDone());
@@ -132,11 +170,11 @@ describe("Async tests", () => {
       .post("/apiv3/test/test", () => {
         return true;
       })
-      .reply(200, response.async);
+      .reply(200, response.asyn);
     api
       .post("/apiv3/api.my_messages", defaultBody)
       .reply(200, response.asyncError);
-    return buzzapi.post("test", "test", {}).catch(err => {
+    return buzzapi.post("test", "test", {}).catch((err) => {
       expect(typeof err.buzzApiBody).to.equal("object");
       expect(err.buzzApiErrorInfo.success).to.equal(false);
     });
@@ -148,7 +186,7 @@ describe("Async tests", () => {
       .post("/apiv3/test/test", () => {
         return true;
       })
-      .reply(200, response.async);
+      .reply(200, response.asyn);
     api
       .post("/apiv3/api.my_messages", defaultBody)
       .reply(200, response.syncError);
@@ -163,12 +201,12 @@ describe("Async tests", () => {
       .post("/apiv3/test/test", () => {
         return true;
       })
-      .reply(200, response.async);
+      .reply(200, response.asyn);
     api.post("/apiv3/api.my_messages", defaultBody).reply(500);
     api
       .post("/apiv3/api.my_messages", defaultBody)
       .reply(200, response.asyncSuccess);
-    return buzzapi.post("test", "test", {}).then(response => {
+    return buzzapi.post("test", "test", {}).then((response) => {
       expect(typeof response).to.equal("object");
       expect(response.success);
     });
@@ -179,13 +217,13 @@ describe("Async tests", () => {
       .post("/apiv3/test/test", () => {
         return true;
       })
-      .reply(200, response.async);
+      .reply(200, response.asyn);
     api
       .post("/apiv3/api.my_messages", defaultBody)
       .reply(200, response.asyncNotReady);
     const defaultTimeout = buzzapi.options.api_receive_timeout;
     buzzapi.options.api_receive_timeout = 1;
-    return buzzapi.post("test", "test", {}).catch(err => {
+    return buzzapi.post("test", "test", {}).catch((err) => {
       buzzapi.options.api_receive_timeout = defaultTimeout;
       expect(err.message).to.equal("Request timed out for: ABC123");
     });
