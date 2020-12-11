@@ -63,15 +63,21 @@ const BuzzAPI = function (config) {
         randomize: true,
       }).then((response) => {
         if (!response.ok) {
-          return rej(
-            new BuzzAPIError(
-              `${response.status}: ${response.statusText}`,
-              null,
-              `${response.status}: ${response.statusText}`,
-              response.api_request_messageid,
-              { url, options: myOpts }
-            )
-          );
+          return response.text().then((body) => {
+            try {
+              const parsed = JSON.parse(body);
+              body = parsed;
+            } catch (err) {}
+            return rej(
+              new BuzzAPIError(
+                `${response.status}: ${response.statusText}`,
+                body.api_error_info,
+                `${response.status}: ${response.statusText}`,
+                body.api_request_messageid,
+                { url, options: myOpts }
+              )
+            );
+          });
         }
         return response.json().then(async (json) => {
           if (json.api_error_info) {
