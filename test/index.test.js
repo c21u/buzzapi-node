@@ -57,6 +57,20 @@ describe("Sync tests", () => {
     });
   });
 
+  it("Handles http errors with json bodies", () => {
+    api
+      .post("/apiv3/test/test", () => {
+        return true;
+      })
+      .reply(503, { api_error_info: "Service unavailable for some time" });
+    return buzzapisync.post("test", "test", {}).catch((err) => {
+      expect(err.buzzApiBody).to.equal("503: Service Unavailable");
+      return expect(err.buzzApiErrorInfo).to.be.equal(
+        "Service unavailable for some time"
+      );
+    });
+  });
+
   it("Handles errors with no body set", () => {
     api
       .post("/apiv3/test/test", () => {
