@@ -35,4 +35,4 @@ function sanitize(buzzApiRequest) {
   return buzzApiRequest;
 }
 
-module.exports = BuzzAPIError;
+export default BuzzAPIError;

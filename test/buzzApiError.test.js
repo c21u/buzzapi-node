@@ -1,5 +1,5 @@
-const expect = require("chai").expect;
-const BuzzApiError = require("../buzzApiError");
+import { expect } from "chai";
+import BuzzApiError from "../buzzApiError.js";
 
 describe("BuzzApiErrors", () => {
   it("Sets default values", () => {

@@ -1,8 +1,8 @@
-const expect = require("chai").expect;
-const nock = require("nock");
+import { expect } from "chai";
+import nock from "nock";
 
-const BuzzApi = require("../index");
-const response = require("./response");
+import BuzzApi from "../index.js";
+import response from "./response.js";
 
 const buzzapisync = new BuzzApi({ apiUser: "", apiPassword: "", sync: true });
 const buzzapi = new BuzzApi({ apiUser: "", apiPassword: "" });

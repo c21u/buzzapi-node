@@ -1,13 +1,17 @@
-const https = require("https");
-const isEmpty = require("lodash.isempty");
-const debug = require("debug")("buzzapi");
-const delay = require("delay");
-const hyperid = require("hyperid")({ fixedLength: true, urlSafe: true });
-const os = require("os");
-const BuzzAPIError = require("./buzzApiError");
-const pRetry = require("p-retry");
-const pThrottle = require("p-throttle");
-const { default: PQueue } = require("p-queue");
+import https from "https";
+import isEmpty from "lodash.isempty";
+import Debug from "debug";
+import delay from "delay";
+import Hyperid from "hyperid";
+import MakeFetch from "make-fetch-happen";
+import os from "os";
+import pRetry from "p-retry";
+import pThrottle from "p-throttle";
+import PQueue from "p-queue";
+import BuzzAPIError from "./buzzApiError.js";
+
+const debug = Debug("buzzapi");
+const hyperid = Hyperid({ fixedLength: true, urlSafe: true });
 
 https.globalAgent.maxCachedSessions = 0;
 
@@ -25,12 +29,11 @@ const BuzzAPI = function (config) {
 
   const server = config.server || "https://api.gatech.edu";
 
-  const fetch = pThrottle(
-    require("make-fetch-happen").defaults({
+  const throttle = pThrottle({limit: 333, interval: 1000})
+  const fetch = throttle(
+    MakeFetch.defaults({
       agent: https.globalAgent,
-    }),
-    333,
-    1000
+    })
   );
 
   const unresolved = {};
@@ -252,4 +255,4 @@ const BuzzAPI = function (config) {
   };
 };
 
-module.exports = BuzzAPI;
+export default BuzzAPI;

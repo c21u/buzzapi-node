@@ -1,4 +1,4 @@
-module.exports = {
+export default {
   sync: {
     api_result_data: { success: true },
   },
