@@ -21,8 +21,8 @@ const BuzzAPI = function (config) {
   const queue = new PQueue({ concurrency: 20 });
 
   this.options = {
-    api_app_id: config.apiUser,
-    api_app_password: Buffer.from(config.apiPassword).toString("base64"),
+    ...(config.apiUser? {api_app_id: config.apiUser}: null),
+    ...(config.apiPassword? {api_app_password: Buffer.from(config.apiPassword).toString("base64")}: null),
     api_request_mode: config.sync ? "sync" : "async",
     api_receive_timeout: config.api_receive_timeout || 900000,
   };

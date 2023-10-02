@@ -26,7 +26,8 @@ BuzzAPIError.prototype.constructor = BuzzAPIError;
 function sanitize(buzzApiRequest) {
   if (buzzApiRequest && buzzApiRequest.options && buzzApiRequest.options.body) {
     const body = JSON.parse(buzzApiRequest.options.body);
-    body.api_app_password = "[REDACTED]";
+    body.api_app_password ? body.api_app_password = "[REDACTED]": null;
+    body.password_base64 ? body.password_base64 = "[REDACTED]": null;
     return {
       ...buzzApiRequest,
       options: { ...buzzApiRequest.options, body: JSON.stringify(body) },
