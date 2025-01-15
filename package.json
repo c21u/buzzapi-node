@@ -1,8 +1,11 @@
 {
   "name": "buzzapi",
-  "version": "2.1.1",
+  "version": "2.1.2",
   "description": "Simple node library for interacting with buzzapi",
-  "repository": "https://github.com/stuartf/buzzapi-node.git",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/stuartf/buzzapi-node.git"
+  },
   "main": "index.js",
   "type": "module",
   "scripts": {
